@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Dashboard</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+<body>
+    <h1>Datos en Tiempo Real</h1>
+    <p>Temperatura: <span id="temp">--</span>°C</p>
+    <p>Humedad: <span id="hum">--</span>%</p>
+
+    <script>
+        const broker = "wss://gatoo.cloud.shiftr.io:443";  // WebSocket MQTT
+        const options = {
+            username: "gatoo",
+            password: "hola"
+        };
+
+        // Conectar al broker
+        const client = mqtt.connect(broker, options);
+
+        client.on("connect", () => {
+            console.log("Conectado a Shiftr.io");
+            client.subscribe("sensor/datos");  // Escuchar datos en este topic
+        });
+
+        client.on("message", (topic, message) => {
+            const data = JSON.parse(message.toString());
+            document.getElementById("temp").textContent = data.temperatura;
+            document.getElementById("hum").textContent = data.humedad;
+        });
+    </script>
+</body>
+</html>
