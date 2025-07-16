@@ -24,6 +24,7 @@
     <p class="dato">🧪 Gas (valor): <span id="gas_valor">--</span></p>
     <p class="dato">🚨 Alerta Gas: <span id="gas_alerta">--</span></p>
     <p class="dato">🚶 Movimiento: <span id="mov">--</span></p>
+    <p class="dato">🔌 Corriente: <span id="corriente">--</span> mA</p>
 
     <h2>🎮 Control de Relés</h2>
     <div class="reles">
@@ -59,6 +60,7 @@
                 document.getElementById("gas_valor").textContent = data.gas_valor;
                 document.getElementById("gas_alerta").textContent = data.gas_alerta === 1 ? "Sí" : "No";
                 document.getElementById("mov").textContent = data.movimiento === 1 ? "Sí" : "No";
+                document.getElementById("corriente").textContent = data.corriente; // Nueva línea
             } catch (e) {
                 console.error("Error al parsear mensaje:", e);
             }
