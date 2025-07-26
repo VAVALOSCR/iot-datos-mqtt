@@ -8,10 +8,16 @@
         body { font-family: Arial, sans-serif; padding: 20px; background-color: #f3f3f3; }
         h1 { color: #007BFF; }
         .dato { font-size: 1.2em; margin: 5px 0; }
-        .reles button {
+        .reles button, .auto-btn {
             margin: 4px;
             padding: 10px 20px;
             font-size: 1em;
+            cursor: pointer;
+        }
+        .auto-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
         }
     </style>
 </head>
@@ -38,6 +44,9 @@
         <button onclick="controlRele(4, false)">RELE 4 OFF</button>
     </div>
 
+    <h2>🤖 Modo Automático</h2>
+    <button class="auto-btn" onclick="toggleAuto()">Activar Modo Automático</button>
+
     <script>
         const broker = "wss://datos.cloud.shiftr.io:443";
         const options = {
@@ -46,6 +55,8 @@
         };
 
         const client = mqtt.connect(broker, options);
+
+        let modoAuto = false;
 
         client.on("connect", () => {
             console.log("Conectado a Shiftr.io");
@@ -60,16 +71,32 @@
                 document.getElementById("gas_valor").textContent = data.gas_valor;
                 document.getElementById("gas_alerta").textContent = data.gas_alerta === 1 ? "Sí" : "No";
                 document.getElementById("mov").textContent = data.movimiento === 1 ? "Sí" : "No";
-                document.getElementById("corriente").textContent = data.corriente; // Nueva línea
+                document.getElementById("corriente").textContent = data.corriente || "--";
             } catch (e) {
                 console.error("Error al parsear mensaje:", e);
             }
         });
 
         function controlRele(numero, encender) {
+            modoAuto = false; // Desactivar modo automático si se usa control manual
+            updateAutoBtn();
             const comando = `RELE${numero}_${encender ? "ON" : "OFF"}`;
             client.publish("sensor/control", comando);
             console.log("Comando enviado:", comando);
+        }
+
+        function toggleAuto() {
+            modoAuto = !modoAuto;
+            const comando = modoAuto ? "AUTO_ON" : "AUTO_OFF";
+            client.publish("sensor/control", comando);
+            console.log("Comando enviado:", comando);
+            updateAutoBtn();
+        }
+
+        function updateAutoBtn() {
+            const btn = document.querySelector(".auto-btn");
+            btn.textContent = modoAuto ? "Desactivar Modo Automático" : "Activar Modo Automático";
+            btn.style.backgroundColor = modoAuto ? "#dc3545" : "#28a745";
         }
     </script>
 </body>
