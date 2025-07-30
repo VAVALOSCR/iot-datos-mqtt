@@ -28,6 +28,7 @@
     <p class="dato">🌡️ Temperatura: <span id="temp">--</span> °C</p>
     <p class="dato">💧 Humedad: <span id="hum">--</span> %</p>
     <p class="dato">🧪 Gas (valor): <span id="gas_valor">--</span></p>
+    <p class="dato">💡 Luz: <span id="luz">--</span> lux</p>
     <p class="dato">🚨 Alerta Gas: <span id="gas_alerta">--</span></p>
     <p class="dato">🚶 Movimiento: <span id="mov">--</span></p>
     <p class="dato">🔌 Corriente: <span id="corriente">--</span> mA</p>
@@ -55,7 +56,6 @@
         };
 
         const client = mqtt.connect(broker, options);
-
         let modoAuto = false;
 
         client.on("connect", () => {
@@ -72,13 +72,14 @@
                 document.getElementById("gas_alerta").textContent = data.gas_alerta === 1 ? "Sí" : "No";
                 document.getElementById("mov").textContent = data.movimiento === 1 ? "Sí" : "No";
                 document.getElementById("corriente").textContent = data.corriente || "--";
+                document.getElementById("luz").textContent = data.luz || "--";
             } catch (e) {
                 console.error("Error al parsear mensaje:", e);
             }
         });
 
         function controlRele(numero, encender) {
-            modoAuto = false; // Desactivar modo automático si se usa control manual
+            modoAuto = false; // Desactiva el modo automático al usar control manual
             updateAutoBtn();
             const comando = `RELE${numero}_${encender ? "ON" : "OFF"}`;
             client.publish("sensor/control", comando);
