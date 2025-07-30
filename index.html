@@ -44,8 +44,12 @@
         <button onclick="controlRele(4, false)">RELE 4 OFF</button>
     </div>
 
-    <h2>🤖 Modo Automático</h2>
-    <button class="auto-btn" onclick="toggleAuto()">Activar Modo Automático</button>
+    <h2>🤖 Modos Automáticos</h2>
+    <p class="dato">🟢 PIR Automático: <span id="estadoPIR">Desactivado</span></p>
+    <p class="dato">💡 Luz Automática: <span id="estadoLuz">Desactivado</span></p>
+    <button class="auto-btn" onclick="activarAuto('AUTO_PIR')">Activar Modo PIR</button>
+    <button class="auto-btn" onclick="activarAuto('AUTO_LUZ')">Activar Modo Luz</button>
+    <button class="auto-btn" onclick="desactivarAuto()">Desactivar Modo Automático</button>
 
     <script>
         const broker = "wss://datos.cloud.shiftr.io:443";
@@ -56,47 +60,68 @@
 
         const client = mqtt.connect(broker, options);
 
-        let modoAuto = false;
+        let modoPIR = false;
+        let modoLuz = false;
 
         client.on("connect", () => {
             console.log("Conectado a Shiftr.io");
             client.subscribe("sensor/datos");
+            client.subscribe("sensor/control");  // Para recibir comandos externos
         });
 
         client.on("message", (topic, message) => {
-            try {
-                const data = JSON.parse(message.toString());
-                document.getElementById("temp").textContent = data.temperatura;
-                document.getElementById("hum").textContent = data.humedad;
-                document.getElementById("gas_valor").textContent = data.gas_valor;
-                document.getElementById("gas_alerta").textContent = data.gas_alerta === 1 ? "Sí" : "No";
-                document.getElementById("mov").textContent = data.movimiento === 1 ? "Sí" : "No";
-                document.getElementById("corriente").textContent = data.corriente || "--";
-            } catch (e) {
-                console.error("Error al parsear mensaje:", e);
+            const msg = message.toString();
+            if (topic === "sensor/datos") {
+                try {
+                    const data = JSON.parse(msg);
+                    document.getElementById("temp").textContent = data.temperatura;
+                    document.getElementById("hum").textContent = data.humedad;
+                    document.getElementById("gas_valor").textContent = data.gas_valor;
+                    document.getElementById("gas_alerta").textContent = data.gas_alerta === 1 ? "Sí" : "No";
+                    document.getElementById("mov").textContent = data.movimiento === 1 ? "Sí" : "No";
+                    document.getElementById("corriente").textContent = data.corriente || "--";
+                } catch (e) {
+                    console.error("Error al parsear mensaje:", e);
+                }
+            } else if (topic === "sensor/control") {
+                if (msg === "AUTO_PIR") {
+                    modoPIR = true;
+                    modoLuz = false;
+                    updateEstadoModos();
+                } else if (msg === "AUTO_LUZ") {
+                    modoPIR = false;
+                    modoLuz = true;
+                    updateEstadoModos();
+                } else if (msg === "AUTO_OFF") {
+                    modoPIR = false;
+                    modoLuz = false;
+                    updateEstadoModos();
+                }
             }
         });
 
         function controlRele(numero, encender) {
-            modoAuto = false; // Desactivar modo automático si se usa control manual
-            updateAutoBtn();
+            modoPIR = false;
+            modoLuz = false;
+            updateEstadoModos();
             const comando = `RELE${numero}_${encender ? "ON" : "OFF"}`;
             client.publish("sensor/control", comando);
             console.log("Comando enviado:", comando);
         }
 
-        function toggleAuto() {
-            modoAuto = !modoAuto;
-            const comando = modoAuto ? "AUTO_ON" : "AUTO_OFF";
-            client.publish("sensor/control", comando);
-            console.log("Comando enviado:", comando);
-            updateAutoBtn();
+        function activarAuto(tipo) {
+            client.publish("sensor/control", tipo);
+            console.log("Comando enviado:", tipo);
         }
 
-        function updateAutoBtn() {
-            const btn = document.querySelector(".auto-btn");
-            btn.textContent = modoAuto ? "Desactivar Modo Automático" : "Activar Modo Automático";
-            btn.style.backgroundColor = modoAuto ? "#dc3545" : "#28a745";
+        function desactivarAuto() {
+            client.publish("sensor/control", "AUTO_OFF");
+            console.log("Comando enviado: AUTO_OFF");
+        }
+
+        function updateEstadoModos() {
+            document.getElementById("estadoPIR").textContent = modoPIR ? "Activado" : "Desactivado";
+            document.getElementById("estadoLuz").textContent = modoLuz ? "Activado" : "Desactivado";
         }
     </script>
 </body>
