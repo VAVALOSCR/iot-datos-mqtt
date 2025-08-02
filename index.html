@@ -78,7 +78,7 @@
         let contador = 0;
         let datosRecibidos = [];
 
-        const recomendaciones = Array.from({ length: 100 }, (_, i) => `Recomendación #${i + 1}: Revisa tus sensores periódicamente o verifica el entorno.`);
+        const recomendaciones = Array.from({ length: 100 }, (_, i) => `Recomendación #${i + 1}: Asegúrate de revisar tus sensores periódicamente.`);
 
         client.on("connect", () => {
             console.log("Conectado a Shiftr.io");
@@ -96,7 +96,7 @@
                 document.getElementById("corriente").textContent = data.corriente || "--";
                 document.getElementById("luz").textContent = data.luz || "--";
 
-                // Guardar datos
+                // Guardar datos para exportar
                 datosRecibidos.push({
                     Temperatura: data.temperatura,
                     Humedad: data.humedad,
@@ -110,8 +110,8 @@
 
                 contador++;
                 if (contador % 120 === 0) {
-                    const i = Math.floor(Math.random() * recomendaciones.length);
-                    document.getElementById("recomendacion").textContent = recomendaciones[i];
+                    const indice = Math.floor(Math.random() * recomendaciones.length);
+                    document.getElementById("recomendacion").textContent = recomendaciones[indice];
                 }
 
             } catch (e) {
