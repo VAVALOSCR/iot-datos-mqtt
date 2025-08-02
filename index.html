@@ -81,7 +81,7 @@
         function controlRele(numero, encender) {
             modoAuto = false; // Desactiva el modo automático al usar control manual
             updateAutoBtn();
-            const comando = `RELE${numero}_${encender ? "ON" : "OFF"}`;
+            const comando = RELE${numero}_${encender ? "ON" : "OFF"};
             client.publish("sensor/control", comando);
             console.log("Comando enviado:", comando);
         }
