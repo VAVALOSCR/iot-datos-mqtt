@@ -7,7 +7,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; background-color: #f3f3f3; }
-        h1 { color: #007BFF; }
+        h1 { color: #007BFF; margin-bottom: 5px; }
+        #fechaHora { font-weight: bold; font-size: 1.1em; color: #555; margin-bottom: 20px; }
         .dato { font-size: 1.2em; margin: 5px 0; }
         .reles button, .auto-btn, .export-btn {
             margin: 4px;
@@ -35,6 +36,7 @@
 </head>
 <body>
     <h1>Dashboard IoT - MARIATEGUI</h1>
+    <p id="fechaHora">--</p>
 
     <h2>📊 Datos del Sensor</h2>
     <p class="dato">🌡️ Temperatura: <span id="temp">--</span> °C</p>
@@ -75,14 +77,46 @@
 
         const client = mqtt.connect(broker, options);
         let modoAuto = false;
-        let contador = 0;
         let datosRecibidos = [];
 
-        const recomendaciones = Array.from({ length: 100 }, (_, i) => `Recomendación #${i + 1}: Revisa tus sensores periódicamente o verifica el entorno.`);
+        // Lista de 100 recomendaciones
+        const recomendaciones = Array.from(
+            { length: 100 },
+            (_, i) => `Recomendación #${i + 1}: Revisa tus sensores periódicamente o verifica el entorno.`
+        );
+
+        // Función para mostrar una recomendación aleatoria
+        function mostrarRecomendacion() {
+            const i = Math.floor(Math.random() * recomendaciones.length);
+            document.getElementById("recomendacion").textContent = recomendaciones[i];
+        }
+
+        // Función para actualizar fecha y hora en tiempo real
+        function actualizarFechaHora() {
+            const ahora = new Date();
+            const opciones = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            document.getElementById("fechaHora").textContent = ahora.toLocaleString('es-ES', opciones);
+        }
 
         client.on("connect", () => {
             console.log("Conectado a Shiftr.io");
             client.subscribe("sensor/datos");
+
+            // Mostrar recomendación inicial y programar cambios cada 60 segundos
+            mostrarRecomendacion();
+            setInterval(mostrarRecomendacion, 60000);
+
+            // Iniciar reloj
+            actualizarFechaHora();
+            setInterval(actualizarFechaHora, 1000);
         });
 
         client.on("message", (topic, message) => {
@@ -96,7 +130,7 @@
                 document.getElementById("corriente").textContent = data.corriente || "--";
                 document.getElementById("luz").textContent = data.luz || "--";
 
-                // Guardar datos
+                // Guardar datos para exportar
                 datosRecibidos.push({
                     Temperatura: data.temperatura,
                     Humedad: data.humedad,
@@ -107,12 +141,6 @@
                     Luz: data.luz,
                     Timestamp: new Date().toLocaleString()
                 });
-
-                contador++;
-                if (contador % 120 === 0) {
-                    const i = Math.floor(Math.random() * recomendaciones.length);
-                    document.getElementById("recomendacion").textContent = recomendaciones[i];
-                }
 
             } catch (e) {
                 console.error("Error al parsear mensaje:", e);
