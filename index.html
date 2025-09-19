@@ -1,187 +1,126 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>IoT Dashboard + Control</title>
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f3f3f3; }
-        h1 { color: #007BFF; margin-bottom: 5px; }
-        #fechaHora { font-weight: bold; font-size: 1.1em; color: #555; margin-bottom: 20px; }
-        .dato { font-size: 1.2em; margin: 5px 0; }
-        .reles button, .auto-btn, .export-btn {
-            margin: 4px;
-            padding: 10px 20px;
-            font-size: 1em;
-            cursor: pointer;
-        }
-        .auto-btn {
-            background-color: #28a745;
-            color: white;
-            border: none;
-        }
-        .export-btn {
-            background-color: #17a2b8;
-            color: white;
-            border: none;
-        }
-        #recomendacion {
-            font-style: italic;
-            margin-top: 10px;
-            font-size: 1.1em;
-            color: #333;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARTVIC - Publicidad</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #ff4d4d, #6600ff);
+      color: #fff;
+      text-align: center;
+    }
+
+    header {
+      padding: 40px 20px;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    header h1 {
+      font-size: 3rem;
+      margin: 0;
+    }
+
+    header p {
+      font-size: 1.2rem;
+      margin-top: 10px;
+    }
+
+    .contacto {
+      margin-top: 15px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #ffcc00;
+    }
+
+    section {
+      padding: 50px 20px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 15px 30px;
+      margin-top: 20px;
+      background: #ffcc00;
+      color: #000;
+      font-size: 1.1rem;
+      font-weight: bold;
+      text-decoration: none;
+      border-radius: 30px;
+      transition: 0.3s;
+    }
+
+    .btn:hover {
+      background: #fff;
+      color: #6600ff;
+      transform: scale(1.1);
+    }
+
+    .card-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 20px;
+      margin: 15px;
+      width: 250px;
+      transition: 0.3s;
+    }
+
+    .card:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-10px);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      font-size: 1.5rem;
+      color: #ffcc00;
+    }
+
+    footer {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 20px;
+      font-size: 0.9rem;
+      margin-top: 40px;
+    }
+  </style>
 </head>
 <body>
-    <h1>Dashboard IoT - MARIATEGUI</h1>
-    <p id="fechaHora">--</p>
+  <header>
+    <h1>🌟 ARTVIC 🌟</h1>
+    <p>Creatividad, innovación y estilo para tu mundo</p>
+    <p class="contacto">📞 902036747 | Proyectos Electrónicos</p>
+    <a href="#servicios" class="btn">Descubre más</a>
+  </header>
 
-    <h2>📊 Datos del Sensor</h2>
-    <p class="dato">🌡️ Temperatura: <span id="temp">--</span> °C</p>
-    <p class="dato">💧 Humedad: <span id="hum">--</span> %</p>
-    <p class="dato">🧪 Gas (valor): <span id="gas_valor">--</span></p>
-    <p class="dato">💡 Luz: <span id="luz">--</span> lux</p>
-    <p class="dato">🚨 Alerta Gas: <span id="gas_alerta">--</span></p>
-    <p class="dato">🚶 Movimiento: <span id="mov">--</span></p>
-    <p class="dato">🔌 Corriente: <span id="corriente">--</span> mA</p>
-
-    <h2>🎮 Control de Relés</h2>
-    <div class="reles">
-        <button onclick="controlRele(1, true)">RELE 1 ON</button>
-        <button onclick="controlRele(1, false)">RELE 1 OFF</button>
-        <button onclick="controlRele(2, true)">RELE 2 ON</button>
-        <button onclick="controlRele(2, false)">RELE 2 OFF</button>
-        <button onclick="controlRele(3, true)">RELE 3 ON</button>
-        <button onclick="controlRele(3, false)">RELE 3 OFF</button>
-        <button onclick="controlRele(4, true)">RELE 4 ON</button>
-        <button onclick="controlRele(4, false)">RELE 4 OFF</button>
+  <section id="servicios">
+    <h2>Nuestros Servicios</h2>
+    <div class="card-container">
+      <div class="card">
+        <h3>🎨 Diseño Gráfico</h3>
+        <p>Logotipos, banners, flyers y todo lo que tu marca necesita.</p>
+      </div>
+      <div class="card">
+        <h3>💻 Desarrollo Web</h3>
+        <p>Páginas modernas, responsivas y optimizadas para tu negocio.</p>
+      </div>
+      <div class="card">
+        <h3>🔌 Proyectos Electrónicos</h3>
+        <p>Innovación y tecnología aplicada para tus ideas y proyectos.</p>
+      </div>
     </div>
+  </section>
 
-    <h2>🤖 Modo Automático</h2>
-    <button class="auto-btn" onclick="toggleAuto()">Activar Modo Automático</button>
-
-    <h2>🧠 Recomendaciones</h2>
-    <p id="recomendacion">--</p>
-
-    <h2>📤 Exportar Datos</h2>
-    <button class="export-btn" onclick="exportarExcel()">Exportar a Excel</button>
-
-    <script>
-        const broker = "wss://datos.cloud.shiftr.io:443";
-        const options = {
-            username: "datos",
-            password: "hola"
-        };
-
-        const client = mqtt.connect(broker, options);
-        let modoAuto = false;
-        let datosRecibidos = [];
-
-        // Lista de 100 recomendaciones
-        const recomendaciones = Array.from(
-            { length: 100 },
-            (_, i) => `Recomendación #${i + 1}: Revisa tus sensores periódicamente o verifica el entorno.`
-        );
-
-        // Función para mostrar una recomendación aleatoria
-        function mostrarRecomendacion() {
-            const i = Math.floor(Math.random() * recomendaciones.length);
-            document.getElementById("recomendacion").textContent = recomendaciones[i];
-        }
-
-        // Función para actualizar fecha y hora en tiempo real
-        function actualizarFechaHora() {
-            const ahora = new Date();
-            const opciones = {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            };
-            document.getElementById("fechaHora").textContent = ahora.toLocaleString('es-ES', opciones);
-        }
-
-        client.on("connect", () => {
-            console.log("Conectado a Shiftr.io");
-            client.subscribe("sensor/datos");
-
-            // Mostrar recomendación inicial y programar cambios cada 60 segundos
-            mostrarRecomendacion();
-            setInterval(mostrarRecomendacion, 60000);
-
-            // Iniciar reloj
-            actualizarFechaHora();
-            setInterval(actualizarFechaHora, 1000);
-        });
-
-        client.on("message", (topic, message) => {
-            try {
-                const data = JSON.parse(message.toString());
-                document.getElementById("temp").textContent = data.temperatura;
-                document.getElementById("hum").textContent = data.humedad;
-                document.getElementById("gas_valor").textContent = data.gas_valor;
-                document.getElementById("gas_alerta").textContent = data.gas_alerta === 1 ? "Sí" : "No";
-                document.getElementById("mov").textContent = data.movimiento === 1 ? "Sí" : "No";
-                document.getElementById("corriente").textContent = data.corriente || "--";
-                document.getElementById("luz").textContent = data.luz || "--";
-
-                // Guardar datos para exportar
-                datosRecibidos.push({
-                    Temperatura: data.temperatura,
-                    Humedad: data.humedad,
-                    Gas: data.gas_valor,
-                    AlertaGas: data.gas_alerta,
-                    Movimiento: data.movimiento,
-                    Corriente: data.corriente,
-                    Luz: data.luz,
-                    Timestamp: new Date().toLocaleString()
-                });
-
-            } catch (e) {
-                console.error("Error al parsear mensaje:", e);
-            }
-        });
-
-        function controlRele(numero, encender) {
-            modoAuto = false;
-            updateAutoBtn();
-            const comando = `RELE${numero}_${encender ? "ON" : "OFF"}`;
-            client.publish("sensor/control", comando);
-            console.log("Comando enviado:", comando);
-        }
-
-        function toggleAuto() {
-            modoAuto = !modoAuto;
-            const comando = modoAuto ? "AUTO_ON" : "AUTO_OFF";
-            client.publish("sensor/control", comando);
-            console.log("Comando enviado:", comando);
-            updateAutoBtn();
-        }
-
-        function updateAutoBtn() {
-            const btn = document.querySelector(".auto-btn");
-            btn.textContent = modoAuto ? "Desactivar Modo Automático" : "Activar Modo Automático";
-            btn.style.backgroundColor = modoAuto ? "#dc3545" : "#28a745";
-        }
-
-        function exportarExcel() {
-            if (datosRecibidos.length === 0) {
-                alert("No hay datos para exportar.");
-                return;
-            }
-
-            const ws = XLSX.utils.json_to_sheet(datosRecibidos);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "DatosSensor");
-
-            const nombreArchivo = `datos_sensor_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.xlsx`;
-            XLSX.writeFile(wb, nombreArchivo);
-        }
-    </script>
+  <footer>
+    © 2025 ARTVIC | Todos los derechos reservados  
+  </footer>
 </body>
 </html>
