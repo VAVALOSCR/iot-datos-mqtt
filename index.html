@@ -14,21 +14,55 @@
       padding: 20px;
       text-align: center;
     }
+
     h1 {
       color: #333;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
+
     #status {
       margin-bottom: 25px;
       font-size: 17px;
       color: #555;
     }
+
+    /* ================= HEADER DE INFORMACIÓN ================= */
+    .info-panel {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .info-box {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      padding: 15px 25px;
+      min-width: 200px;
+      text-align: center;
+    }
+
+    .info-title {
+      font-size: 0.9em;
+      color: #777;
+    }
+
+    .info-value {
+      font-size: 1.4em;
+      font-weight: bold;
+      color: #007bff;
+    }
+
+    /* ================= TARJETAS DE GRÁFICOS ================= */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
       gap: 25px;
       justify-content: center;
     }
+
     .card {
       background: #fff;
       border-radius: 12px;
@@ -36,25 +70,30 @@
       padding: 15px;
       transition: transform 0.2s;
     }
+
     .card:hover {
       transform: scale(1.02);
     }
+
     h3 {
       color: #007bff;
       font-size: 1.2em;
       margin-bottom: 10px;
     }
+
     .valor {
       font-size: 2em;
       font-weight: bold;
       margin-top: 10px;
       color: #111;
     }
+
     .sub {
       color: #666;
       font-size: 0.9em;
       margin-bottom: 10px;
     }
+
     canvas {
       width: 100% !important;
       height: 230px !important;
@@ -62,9 +101,38 @@
   </style>
 </head>
 <body>
-  <h1>🏭 Panel de Monitoreo de Producción en Tiempo Real</h1>
+  <h1>🏭 Dashboard de Producción Industrial - IoT</h1>
   <div id="status">⏳ Conectando con el servidor IoT...</div>
 
+  <!-- PANEL SUPERIOR DE INFORMACIÓN -->
+  <div class="info-panel">
+    <div class="info-box">
+      <div class="info-title">📦 Producto</div>
+      <div class="info-value" id="infoProducto">-</div>
+    </div>
+    <div class="info-box">
+      <div class="info-title">🕒 Turno</div>
+      <div class="info-value" id="infoTurno">-</div>
+    </div>
+    <div class="info-box">
+      <div class="info-title">🎯 Meta Mensual</div>
+      <div class="info-value" id="infoMeta">0</div>
+    </div>
+    <div class="info-box">
+      <div class="info-title">📆 Producción del Mes</div>
+      <div class="info-value" id="infoProdMes">0</div>
+    </div>
+    <div class="info-box">
+      <div class="info-title">💰 Ganancias (S/)</div>
+      <div class="info-value" id="infoGanancias">0.00</div>
+    </div>
+    <div class="info-box">
+      <div class="info-title">📊 Comparación con Mes Anterior</div>
+      <div class="info-value" id="infoComparacion">0%</div>
+    </div>
+  </div>
+
+  <!-- GRÁFICOS -->
   <div class="grid">
     <!-- PRODUCCIÓN -->
     <div class="card">
@@ -187,7 +255,15 @@
 
         const now = new Date().toLocaleTimeString();
 
-        // === Producción ===
+        // ===== PANEL SUPERIOR =====
+        document.getElementById("infoProducto").innerText = data.producto || "-";
+        document.getElementById("infoTurno").innerText = data.turno_actual || "-";
+        document.getElementById("infoMeta").innerText = data.meta_mes || 0;
+        document.getElementById("infoProdMes").innerText = data.produccion_mes || 0;
+        document.getElementById("infoGanancias").innerText = "S/ " + (data.ganancias || 0).toFixed(2);
+        document.getElementById("infoComparacion").innerText = (data.comparacion_mes_anterior || 0) + "%";
+
+        // ===== PRODUCCIÓN =====
         if (chartProduccion.data.labels.length > 15) {
           chartProduccion.data.labels.shift();
           chartProduccion.data.datasets[0].data.shift();
@@ -197,7 +273,7 @@
         chartProduccion.update();
         document.getElementById("produccionValor").innerText = data.produccion_dia || 0;
 
-        // === Máquinas ===
+        // ===== MÁQUINAS =====
         const activas = data.maquinas_activas || 0;
         const mant = data.maquinas_mantenimiento || 0;
         const total = data.maquinas_totales || 10;
@@ -206,12 +282,12 @@
         chartMaquinas.update();
         document.getElementById("maquinasActivas").innerText = activas;
 
-        // === Insumos ===
-        chartInsumos.data.datasets[0].data = [data.insumos || 0];
+        // ===== INSUMOS =====
+        chartInsumos.data.datasets[0].data = [data.insumos_porcentaje || 0];
         chartInsumos.update();
-        document.getElementById("insumosValor").innerText = (data.insumos || 0) + "%";
+        document.getElementById("insumosValor").innerText = (data.insumos_porcentaje || 0) + "%";
 
-        // === Defectos ===
+        // ===== DEFECTOS =====
         const ok = Math.max(0, (data.produccion_dia || 0) - (data.defectuosas || 0));
         chartDefectos.data.datasets[0].data = [ok, data.defectuosas || 0];
         chartDefectos.update();
