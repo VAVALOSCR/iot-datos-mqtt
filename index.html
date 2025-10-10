@@ -1,139 +1,172 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Dashboard Producción (MQTT)</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Producción IoT</title>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 18px; background:#f6f7fb; color:#222; }
-    h1 { color:#0b5ed7; }
-    .card { background:white; padding:12px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.08); margin-bottom:12px; max-width:900px; }
-    .grid { display:flex; gap:12px; flex-wrap:wrap; }
-    .small { flex:1 1 200px; }
-    canvas { max-width:900px; margin:10px auto; display:block; }
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 20px;
+      justify-content: center;
+    }
+    canvas {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      padding: 10px;
+    }
+    #status {
+      margin: 20px;
+      font-size: 18px;
+      color: #555;
+    }
   </style>
 </head>
 <body>
-  <h1>📡 Dashboard de Producción (MQTT)</h1>
+  <h1>🏭 Panel de Monitoreo de Producción en Tiempo Real</h1>
+  <div id="status">⏳ Conectando con el servidor IoT...</div>
 
-  <div class="card">
-    <strong>Broker:</strong> gatoo.cloud.shiftr.io &nbsp;&nbsp; <strong>User:</strong> gatoo
-    <div id="status">Conectando...</div>
-  </div>
-
-  <div id="info" class="card">Esperando datos...</div>
-
-  <div class="card">
-    <div class="grid">
-      <div class="small"><canvas id="barChart"></canvas></div>
-      <div class="small"><canvas id="pieChart"></canvas></div>
-    </div>
+  <div class="grid">
+    <canvas id="chartProduccion"></canvas>
+    <canvas id="chartMaquinas"></canvas>
+    <canvas id="chartInsumos"></canvas>
+    <canvas id="chartDefectos"></canvas>
   </div>
 
   <script>
-    // Configura aquí (no recomendable guardar claves en repos públicos)
-    const BROKER_WS = "wss://gatoo.cloud.shiftr.io:443"; // probar wss
-    const USER = "gatoo";
-    const PASS = "hola";
-    const TOPIC_STATUS = "factory/status";
-    const TOPIC_EVENTS = "factory/events";
-
-    const client = mqtt.connect(BROKER_WS, {
-      username: USER,
-      password: PASS,
-      reconnectPeriod: 3000
+    // ============= CONFIGURACIÓN MQTT =============
+    const client = mqtt.connect("wss://gatoo.cloud.shiftr.io", {
+      username: "gatoo",
+      password: "hola"
     });
 
-    const infoDiv = document.getElementById("info");
     const statusDiv = document.getElementById("status");
 
-    let latestState = null;
-
     client.on("connect", () => {
-      statusDiv.innerText = "Conectado al broker MQTT";
-      client.subscribe(TOPIC_STATUS);
-      client.subscribe(TOPIC_EVENTS);
+      statusDiv.innerText = "✅ Conectado al servidor IoT (Shiftr.io)";
+      client.subscribe("factory/status");
     });
 
-    client.on("reconnect", () => statusDiv.innerText = "Reconectando...");
-    client.on("offline", () => statusDiv.innerText = "Offline");
-    client.on("error", (err) => { statusDiv.innerText = "Error: " + err; console.error(err); });
+    client.on("error", err => {
+      statusDiv.innerText = "❌ Error de conexión MQTT";
+      console.error(err);
+    });
 
-    client.on("message", (topic, message) => {
-      try {
-        const payload = JSON.parse(message.toString());
-        if (topic === TOPIC_STATUS) {
-          latestState = payload;
-          renderInfo(payload);
-          renderCharts(payload);
-        } else if (topic === TOPIC_EVENTS) {
-          // podríamos mostrar un log o animación
-          console.log("EVENT:", payload);
-        }
-      } catch(e) {
-        console.error("No JSON:", message.toString());
+    // ============= CONFIGURACIÓN DE GRÁFICOS =============
+    const ctxProd = document.getElementById('chartProduccion');
+    const ctxMaq = document.getElementById('chartMaquinas');
+    const ctxIns = document.getElementById('chartInsumos');
+    const ctxDef = document.getElementById('chartDefectos');
+
+    const chartProduccion = new Chart(ctxProd, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Producción por Día',
+          data: [],
+          borderColor: '#007bff',
+          fill: true,
+          backgroundColor: 'rgba(0,123,255,0.2)'
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true } },
+        scales: { y: { beginAtZero: true } }
       }
     });
 
-    function renderInfo(s) {
-      if (!s) { infoDiv.innerHTML = "Sin datos"; return; }
-      infoDiv.innerHTML = `
-        <h3>${s.producto || "Producto"}</h3>
-        <p><b>Empleados:</b> ${s.empleados || 0} &nbsp; <b>Máq. activas:</b> ${s.maquinas_activas || 0}</p>
-        <p><b>Producción día/mes:</b> ${s.produccion_dia || 0} / ${s.produccion_mes || 0}</p>
-        <p><b>Producción por turno:</b> ${JSON.stringify(s.produccion_por_turno || {})}</p>
-        <p><b>Defectuosas:</b> ${s.defectuosas || 0} &nbsp; <b>Insumos %:</b> ${s.insumos_porcentaje || 0}%</p>
-        <p><b>Meta mes:</b> ${s.meta_mes || 0} &nbsp; <b>Ganancias:</b> S/ ${s.ganancias || 0}</p>
-        <p><b>Comparación mes anterior:</b> ${s.comparacion_mes_anterior || 0}%</p>
-        <p><b>Tiempo actividad máquinas (hs):</b> ${s.tiempo_actividad_maquina_hs || s.tiempo_actividad_maquina || 0}</p>
-        <p><b>Recomendaciones:</b> ${s.recomendaciones || "—"}</p>
-        <p><b>Especificaciones:</b> ${s.especificaciones || "—"}</p>
-        <p><small>Última lectura: ${s.timestamp || ""}</small></p>
-      `;
-    }
+    const chartMaquinas = new Chart(ctxMaq, {
+      type: 'doughnut',
+      data: {
+        labels: ['Activas', 'En Mantenimiento', 'Inactivas'],
+        datasets: [{
+          data: [0, 0, 0],
+          backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+        }]
+      },
+      options: { plugins: { legend: { position: 'bottom' } } }
+    });
 
-    // Chart.js
-    let barChart = null;
-    let pieChart = null;
+    const chartInsumos = new Chart(ctxIns, {
+      type: 'bar',
+      data: {
+        labels: ['Materia Prima Usada (%)'],
+        datasets: [{
+          label: 'Uso de Insumos',
+          data: [0],
+          backgroundColor: ['#17a2b8']
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true, max: 100 } }
+      }
+    });
 
-    function renderCharts(s) {
-      // Datos máquinas
-      const machines = [s.maquinas_activas || 0, s.maquinas_inactivas || 0, s.maquinas_mantenimiento || 0];
+    const chartDefectos = new Chart(ctxDef, {
+      type: 'pie',
+      data: {
+        labels: ['Productos OK', 'Defectuosos'],
+        datasets: [{
+          data: [0, 0],
+          backgroundColor: ['#20c997', '#dc3545']
+        }]
+      },
+      options: { plugins: { legend: { position: 'bottom' } } }
+    });
 
-      // Barra
-      const barCtx = document.getElementById('barChart').getContext('2d');
-      if (barChart) barChart.destroy();
-      barChart = new Chart(barCtx, {
-        type: 'bar',
-        data: {
-          labels: ['Activas','Inactivas','Mantenimiento'],
-          datasets: [{ label: 'Máquinas', data: machines }]
-        },
-        options: { responsive: true }
-      });
+    // ============= ACTUALIZACIÓN EN TIEMPO REAL =============
+    client.on("message", (topic, message) => {
+      if (topic === "factory/status") {
+        const data = JSON.parse(message.toString());
+        console.log("📩 Datos recibidos:", data);
 
-      // Pastel: buena vs defectuosa
-      const good = (s.produccion_mes || 0) - (s.defectuosas || 0);
-      const bad = s.defectuosas || 0;
-      const pieCtx = document.getElementById('pieChart').getContext('2d');
-      if (pieChart) pieChart.destroy();
-      pieChart = new Chart(pieCtx, {
-        type: 'pie',
-        data: {
-          labels: ['Buena', 'Defectuosa'],
-          datasets: [{ data: [Math.max(0, good), Math.max(0, bad)] }]
-        },
-        options: { responsive: true }
-      });
-    }
+        const now = new Date().toLocaleTimeString();
 
-    // refrescar UI si hay estado existente
-    setInterval(() => {
-      if (latestState) renderInfo(latestState);
-    }, 5000);
+        // === Producción ===
+        if (chartProduccion.data.labels.length > 15) {
+          chartProduccion.data.labels.shift();
+          chartProduccion.data.datasets[0].data.shift();
+        }
+        chartProduccion.data.labels.push(now);
+        chartProduccion.data.datasets[0].data.push(data.produccion_dia || 0);
+        chartProduccion.update();
 
+        // === Máquinas ===
+        chartMaquinas.data.datasets[0].data = [
+          data.maquinas_activas || 0,
+          data.maquinas_mantenimiento || 0,
+          (data.maquinas_totales || 10) - (data.maquinas_activas || 0) - (data.maquinas_mantenimiento || 0)
+        ];
+        chartMaquinas.update();
+
+        // === Insumos ===
+        chartInsumos.data.datasets[0].data = [data.insumos || 0];
+        chartInsumos.update();
+
+        // === Defectos ===
+        const ok = data.produccion_dia - (data.defectuosas || 0);
+        chartDefectos.data.datasets[0].data = [ok < 0 ? 0 : ok, data.defectuosas || 0];
+        chartDefectos.update();
+      }
+    });
   </script>
 </body>
 </html>
