@@ -1,126 +1,139 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ARTVIC -UPN</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard Producción (MQTT)</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background: linear-gradient(135deg, #ff4d4d, #6600ff);
-      color: #fff;
-      text-align: center;
-    }
-
-    header {
-      padding: 40px 20px;
-      background: rgba(0, 0, 0, 0.5);
-    }
-
-    header h1 {
-      font-size: 3rem;
-      margin: 0;
-    }
-
-    header p {
-      font-size: 1.2rem;
-      margin-top: 10px;
-    }
-
-    .contacto {
-      margin-top: 15px;
-      font-size: 1.1rem;
-      font-weight: bold;
-      color: #ffcc00;
-    }
-
-    section {
-      padding: 50px 20px;
-    }
-
-    .btn {
-      display: inline-block;
-      padding: 15px 30px;
-      margin-top: 20px;
-      background: #ffcc00;
-      color: #000;
-      font-size: 1.1rem;
-      font-weight: bold;
-      text-decoration: none;
-      border-radius: 30px;
-      transition: 0.3s;
-    }
-
-    .btn:hover {
-      background: #fff;
-      color: #6600ff;
-      transform: scale(1.1);
-    }
-
-    .card-container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-top: 30px;
-    }
-
-    .card {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 15px;
-      padding: 20px;
-      margin: 15px;
-      width: 250px;
-      transition: 0.3s;
-    }
-
-    .card:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: translateY(-10px);
-    }
-
-    .card h3 {
-      margin-top: 0;
-      font-size: 1.5rem;
-      color: #ffcc00;
-    }
-
-    footer {
-      background: rgba(0, 0, 0, 0.7);
-      padding: 20px;
-      font-size: 0.9rem;
-      margin-top: 40px;
-    }
+    body { font-family: Arial, sans-serif; padding: 18px; background:#f6f7fb; color:#222; }
+    h1 { color:#0b5ed7; }
+    .card { background:white; padding:12px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.08); margin-bottom:12px; max-width:900px; }
+    .grid { display:flex; gap:12px; flex-wrap:wrap; }
+    .small { flex:1 1 200px; }
+    canvas { max-width:900px; margin:10px auto; display:block; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>🌟 ARTVIC 🌟</h1>
-    <p>INGENIERIA INSDUSTRIAL</p>
-    <p class="contacto">📞 902036747 | Proyectos Electrónicos</p>
-    <a href="#servicios" class="btn">Descubre más</a>
-  </header>
+  <h1>📡 Dashboard de Producción (MQTT)</h1>
 
-  <section id="servicios">
-    <h2>Nuestros Servicios</h2>
-    <div class="card-container">
-      <div class="card">
-        <h3>🎨 Diseño Gráfico</h3>
-        <p>Logotipos, banners, flyers y todo lo que tu marca necesita.</p>
-      </div>
-      <div class="card">
-        <h3>💻 Desarrollo Web</h3>
-        <p>Páginas modernas, responsivas y optimizadas para tu negocio.</p>
-      </div>
-      <div class="card">
-        <h3>🔌 Proyectos Electrónicos</h3>
-        <p>Innovación y tecnología aplicada para tus ideas y proyectos.</p>
-      </div>
+  <div class="card">
+    <strong>Broker:</strong> gatoo.cloud.shiftr.io &nbsp;&nbsp; <strong>User:</strong> gatoo
+    <div id="status">Conectando...</div>
+  </div>
+
+  <div id="info" class="card">Esperando datos...</div>
+
+  <div class="card">
+    <div class="grid">
+      <div class="small"><canvas id="barChart"></canvas></div>
+      <div class="small"><canvas id="pieChart"></canvas></div>
     </div>
-  </section>
+  </div>
 
-  <footer>
-    © 2025 ARTVIC | Todos los derechos reservados  
-  </footer>
+  <script>
+    // Configura aquí (no recomendable guardar claves en repos públicos)
+    const BROKER_WS = "wss://gatoo.cloud.shiftr.io:443"; // probar wss
+    const USER = "gatoo";
+    const PASS = "hola";
+    const TOPIC_STATUS = "factory/status";
+    const TOPIC_EVENTS = "factory/events";
+
+    const client = mqtt.connect(BROKER_WS, {
+      username: USER,
+      password: PASS,
+      reconnectPeriod: 3000
+    });
+
+    const infoDiv = document.getElementById("info");
+    const statusDiv = document.getElementById("status");
+
+    let latestState = null;
+
+    client.on("connect", () => {
+      statusDiv.innerText = "Conectado al broker MQTT";
+      client.subscribe(TOPIC_STATUS);
+      client.subscribe(TOPIC_EVENTS);
+    });
+
+    client.on("reconnect", () => statusDiv.innerText = "Reconectando...");
+    client.on("offline", () => statusDiv.innerText = "Offline");
+    client.on("error", (err) => { statusDiv.innerText = "Error: " + err; console.error(err); });
+
+    client.on("message", (topic, message) => {
+      try {
+        const payload = JSON.parse(message.toString());
+        if (topic === TOPIC_STATUS) {
+          latestState = payload;
+          renderInfo(payload);
+          renderCharts(payload);
+        } else if (topic === TOPIC_EVENTS) {
+          // podríamos mostrar un log o animación
+          console.log("EVENT:", payload);
+        }
+      } catch(e) {
+        console.error("No JSON:", message.toString());
+      }
+    });
+
+    function renderInfo(s) {
+      if (!s) { infoDiv.innerHTML = "Sin datos"; return; }
+      infoDiv.innerHTML = `
+        <h3>${s.producto || "Producto"}</h3>
+        <p><b>Empleados:</b> ${s.empleados || 0} &nbsp; <b>Máq. activas:</b> ${s.maquinas_activas || 0}</p>
+        <p><b>Producción día/mes:</b> ${s.produccion_dia || 0} / ${s.produccion_mes || 0}</p>
+        <p><b>Producción por turno:</b> ${JSON.stringify(s.produccion_por_turno || {})}</p>
+        <p><b>Defectuosas:</b> ${s.defectuosas || 0} &nbsp; <b>Insumos %:</b> ${s.insumos_porcentaje || 0}%</p>
+        <p><b>Meta mes:</b> ${s.meta_mes || 0} &nbsp; <b>Ganancias:</b> S/ ${s.ganancias || 0}</p>
+        <p><b>Comparación mes anterior:</b> ${s.comparacion_mes_anterior || 0}%</p>
+        <p><b>Tiempo actividad máquinas (hs):</b> ${s.tiempo_actividad_maquina_hs || s.tiempo_actividad_maquina || 0}</p>
+        <p><b>Recomendaciones:</b> ${s.recomendaciones || "—"}</p>
+        <p><b>Especificaciones:</b> ${s.especificaciones || "—"}</p>
+        <p><small>Última lectura: ${s.timestamp || ""}</small></p>
+      `;
+    }
+
+    // Chart.js
+    let barChart = null;
+    let pieChart = null;
+
+    function renderCharts(s) {
+      // Datos máquinas
+      const machines = [s.maquinas_activas || 0, s.maquinas_inactivas || 0, s.maquinas_mantenimiento || 0];
+
+      // Barra
+      const barCtx = document.getElementById('barChart').getContext('2d');
+      if (barChart) barChart.destroy();
+      barChart = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Activas','Inactivas','Mantenimiento'],
+          datasets: [{ label: 'Máquinas', data: machines }]
+        },
+        options: { responsive: true }
+      });
+
+      // Pastel: buena vs defectuosa
+      const good = (s.produccion_mes || 0) - (s.defectuosas || 0);
+      const bad = s.defectuosas || 0;
+      const pieCtx = document.getElementById('pieChart').getContext('2d');
+      if (pieChart) pieChart.destroy();
+      pieChart = new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+          labels: ['Buena', 'Defectuosa'],
+          datasets: [{ data: [Math.max(0, good), Math.max(0, bad)] }]
+        },
+        options: { responsive: true }
+      });
+    }
+
+    // refrescar UI si hay estado existente
+    setInterval(() => {
+      if (latestState) renderInfo(latestState);
+    }, 5000);
+
+  </script>
 </body>
 </html>
