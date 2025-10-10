@@ -1,55 +1,94 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard de Producción IoT</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard IoT Producción</title>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: "Segoe UI", Arial, sans-serif;
-      background-color: #f4f6f8;
+      background: #f6f8fa;
+      color: #333;
       margin: 0;
       padding: 20px;
       text-align: center;
     }
+
     h1 {
-      color: #333;
-      margin-bottom: 30px;
+      font-size: 1.8em;
+      margin-bottom: 10px;
+      color: #2b2b2b;
     }
+
+    #status {
+      font-size: 0.9em;
+      margin-bottom: 25px;
+      color: #555;
+    }
+
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-      gap: 20px;
-      justify-content: center;
-    }
-    canvas {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 15px;
+      justify-items: center;
       padding: 10px;
     }
-    #status {
-      margin: 20px;
-      font-size: 18px;
-      color: #555;
+
+    .chart-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      padding: 15px;
+      width: 90%;
+      max-width: 420px;
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 260px !important;
+    }
+
+    footer {
+      margin-top: 30px;
+      font-size: 0.8em;
+      color: #777;
     }
   </style>
 </head>
 <body>
-  <h1>🏭 Panel de Monitoreo de Producción en Tiempo Real</h1>
+  <h1>🏭 Panel de Producción IoT en Tiempo Real</h1>
   <div id="status">⏳ Conectando con el servidor IoT...</div>
 
   <div class="grid">
-    <canvas id="chartProduccion"></canvas>
-    <canvas id="chartMaquinas"></canvas>
-    <canvas id="chartInsumos"></canvas>
-    <canvas id="chartDefectos"></canvas>
+    <div class="chart-card">
+      <h3>📈 Producción por Día</h3>
+      <canvas id="chartProduccion"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <h3>⚙️ Estado de Máquinas</h3>
+      <canvas id="chartMaquinas"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <h3>📦 Uso de Insumos</h3>
+      <canvas id="chartInsumos"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <h3>🧪 Control de Calidad</h3>
+      <canvas id="chartDefectos"></canvas>
+    </div>
   </div>
 
+  <footer>
+    © 2025 - Sistema de Monitoreo IoT | UGEL TNO
+  </footer>
+
   <script>
-    // ============= CONFIGURACIÓN MQTT =============
+    // ==================== CONFIG MQTT ====================
     const client = mqtt.connect("wss://gatoo.cloud.shiftr.io", {
       username: "gatoo",
       password: "hola"
@@ -67,81 +106,76 @@
       console.error(err);
     });
 
-    // ============= CONFIGURACIÓN DE GRÁFICOS =============
-    const ctxProd = document.getElementById('chartProduccion');
-    const ctxMaq = document.getElementById('chartMaquinas');
-    const ctxIns = document.getElementById('chartInsumos');
-    const ctxDef = document.getElementById('chartDefectos');
-
-    const chartProduccion = new Chart(ctxProd, {
-      type: 'line',
+    // ==================== GRÁFICOS ====================
+    const chartProduccion = new Chart(document.getElementById("chartProduccion"), {
+      type: "line",
       data: {
         labels: [],
         datasets: [{
-          label: 'Producción por Día',
+          label: "Producción (unidades)",
           data: [],
-          borderColor: '#007bff',
+          borderColor: "#007bff",
+          backgroundColor: "rgba(0,123,255,0.2)",
           fill: true,
-          backgroundColor: 'rgba(0,123,255,0.2)'
+          tension: 0.3
         }]
       },
       options: {
         responsive: true,
-        plugins: { legend: { display: true } },
+        plugins: { legend: { display: false } },
         scales: { y: { beginAtZero: true } }
       }
     });
 
-    const chartMaquinas = new Chart(ctxMaq, {
-      type: 'doughnut',
+    const chartMaquinas = new Chart(document.getElementById("chartMaquinas"), {
+      type: "doughnut",
       data: {
-        labels: ['Activas', 'En Mantenimiento', 'Inactivas'],
+        labels: ["Activas", "Mantenimiento", "Inactivas"],
         datasets: [{
           data: [0, 0, 0],
-          backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+          backgroundColor: ["#28a745", "#ffc107", "#dc3545"]
         }]
       },
-      options: { plugins: { legend: { position: 'bottom' } } }
+      options: { plugins: { legend: { position: "bottom" } } }
     });
 
-    const chartInsumos = new Chart(ctxIns, {
-      type: 'bar',
+    const chartInsumos = new Chart(document.getElementById("chartInsumos"), {
+      type: "bar",
       data: {
-        labels: ['Materia Prima Usada (%)'],
+        labels: ["Materia Prima Usada (%)"],
         datasets: [{
-          label: 'Uso de Insumos',
           data: [0],
-          backgroundColor: ['#17a2b8']
+          backgroundColor: "#17a2b8"
         }]
       },
       options: {
-        responsive: true,
-        scales: { y: { beginAtZero: true, max: 100 } }
+        scales: { y: { beginAtZero: true, max: 100 } },
+        plugins: { legend: { display: false } }
       }
     });
 
-    const chartDefectos = new Chart(ctxDef, {
-      type: 'pie',
+    const chartDefectos = new Chart(document.getElementById("chartDefectos"), {
+      type: "pie",
       data: {
-        labels: ['Productos OK', 'Defectuosos'],
+        labels: ["OK", "Defectuosos"],
         datasets: [{
           data: [0, 0],
-          backgroundColor: ['#20c997', '#dc3545']
+          backgroundColor: ["#20c997", "#dc3545"]
         }]
       },
-      options: { plugins: { legend: { position: 'bottom' } } }
+      options: { plugins: { legend: { position: "bottom" } } }
     });
 
-    // ============= ACTUALIZACIÓN EN TIEMPO REAL =============
+    // ==================== ACTUALIZACIÓN EN TIEMPO REAL ====================
     client.on("message", (topic, message) => {
       if (topic === "factory/status") {
         const data = JSON.parse(message.toString());
-        console.log("📩 Datos recibidos:", data);
+        console.log("📩 Recibido:", data);
 
         const now = new Date().toLocaleTimeString();
 
-        // === Producción ===
-        if (chartProduccion.data.labels.length > 15) {
+        // Producción
+        if (chartProduccion.data.labels.length > 10) {
           chartProduccion.data.labels.shift();
           chartProduccion.data.datasets[0].data.shift();
         }
@@ -149,7 +183,7 @@
         chartProduccion.data.datasets[0].data.push(data.produccion_dia || 0);
         chartProduccion.update();
 
-        // === Máquinas ===
+        // Máquinas
         chartMaquinas.data.datasets[0].data = [
           data.maquinas_activas || 0,
           data.maquinas_mantenimiento || 0,
@@ -157,13 +191,13 @@
         ];
         chartMaquinas.update();
 
-        // === Insumos ===
+        // Insumos
         chartInsumos.data.datasets[0].data = [data.insumos || 0];
         chartInsumos.update();
 
-        // === Defectos ===
-        const ok = data.produccion_dia - (data.defectuosas || 0);
-        chartDefectos.data.datasets[0].data = [ok < 0 ? 0 : ok, data.defectuosas || 0];
+        // Defectos
+        const ok = Math.max(0, (data.produccion_dia || 0) - (data.defectuosas || 0));
+        chartDefectos.data.datasets[0].data = [ok, data.defectuosas || 0];
         chartDefectos.update();
       }
     });
