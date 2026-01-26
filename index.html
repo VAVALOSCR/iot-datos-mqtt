@@ -1,299 +1,169 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard de Producción UCV</title>
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      font-family: "Segoe UI", Arial, sans-serif;
-      background-color: #f4f6f8;
-      margin: 0;
-      padding: 20px;
-      text-align: center;
-    }
+<meta charset="UTF-8">
+<title>Simulador Motores DC</title>
 
-    h1 {
-      color: #333;
-      margin-bottom: 10px;
-    }
+<style>
+body{
+    font-family: Arial;
+    background:#ecf3f9;
+    text-align:center;
+}
 
-    #status {
-      margin-bottom: 25px;
-      font-size: 17px;
-      color: #555;
-    }
+#robot{
+    width:600px;
+    height:260px;
+    margin:auto;
+    background:white;
+    border:2px solid black;
+    position:relative;
+}
 
-    /* ================= HEADER DE INFORMACIÓN ================= */
-    .info-panel {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
-      margin-bottom: 30px;
-    }
+.motor{
+    width:80px;
+    position:absolute;
+    top:120px;
+}
 
-    .info-box {
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-      padding: 15px 25px;
-      min-width: 200px;
-      text-align: center;
-    }
+#A{left:80px;}
+#B{right:80px;}
 
-    .info-title {
-      font-size: 0.9em;
-      color: #777;
-    }
+.flecha{
+    font-size:40px;
+    position:absolute;
+    top:20px;
+    width:100%;
+}
 
-    .info-value {
-      font-size: 1.4em;
-      font-weight: bold;
-      color: #007bff;
-    }
+.led{
+    width:20px;
+    height:20px;
+    border-radius:50%;
+    background:gray;
+    display:inline-block;
+    margin:5px;
+}
 
-    /* ================= TARJETAS DE GRÁFICOS ================= */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-      gap: 25px;
-      justify-content: center;
-    }
-
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-      padding: 15px;
-      transition: transform 0.2s;
-    }
-
-    .card:hover {
-      transform: scale(1.02);
-    }
-
-    h3 {
-      color: #007bff;
-      font-size: 1.2em;
-      margin-bottom: 10px;
-    }
-
-    .valor {
-      font-size: 2em;
-      font-weight: bold;
-      margin-top: 10px;
-      color: #111;
-    }
-
-    .sub {
-      color: #666;
-      font-size: 0.9em;
-      margin-bottom: 10px;
-    }
-
-    canvas {
-      width: 100% !important;
-      height: 230px !important;
-    }
-  </style>
+.on{background:lime;}
+</style>
 </head>
+
 <body>
-  <h1>🏭 Dashboard de Producción Industrial - UCV_2025</h1>
-  <div id="status">⏳ Conectando con el servidor IoT...</div>
 
-  <!-- PANEL SUPERIOR DE INFORMACIÓN -->
-  <div class="info-panel">
-    <div class="info-box">
-      <div class="info-title">📦 Producto</div>
-      <div class="info-value" id="infoProducto">-</div>
-    </div>
-    <div class="info-box">
-      <div class="info-title">🕒 Turno</div>
-      <div class="info-value" id="infoTurno">-</div>
-    </div>
-    <div class="info-box">
-      <div class="info-title">🎯 Meta Mensual</div>
-      <div class="info-value" id="infoMeta">0</div>
-    </div>
-    <div class="info-box">
-      <div class="info-title">📆 Producción del Mes</div>
-      <div class="info-value" id="infoProdMes">0</div>
-    </div>
-    <div class="info-box">
-      <div class="info-title">💰 Ganancias (S/)</div>
-      <div class="info-value" id="infoGanancias">0.00</div>
-    </div>
-    <div class="info-box">
-      <div class="info-title">📊 Comparación con Mes Anterior</div>
-      <div class="info-value" id="infoComparacion">0%</div>
-    </div>
-  </div>
+<h1>Simulador Didáctico de Motores</h1>
 
-  <!-- GRÁFICOS -->
-  <div class="grid">
-    <!-- PRODUCCIÓN -->
-    <div class="card">
-      <h3>📈 Producción por Día</h3>
-      <canvas id="chartProduccion"></canvas>
-      <div class="valor" id="produccionValor">0</div>
-      <div class="sub">Unidades producidas hoy</div>
+<div id="robot">
+
+    <div id="A" class="motor">
+        <div class="flecha" id="fa"></div>
+        <img src="motor.png" width="80">
     </div>
 
-    <!-- MÁQUINAS -->
-    <div class="card">
-      <h3>⚙️ Estado de Máquinas</h3>
-      <canvas id="chartMaquinas"></canvas>
-      <div class="valor" id="maquinasActivas">0</div>
-      <div class="sub">Máquinas Activas</div>
+    <div id="B" class="motor">
+        <div class="flecha" id="fb"></div>
+        <img src="motor.png" width="80">
     </div>
 
-    <!-- INSUMOS -->
-    <div class="card">
-      <h3>🧪 Uso de Insumos</h3>
-      <canvas id="chartInsumos"></canvas>
-      <div class="valor" id="insumosValor">0%</div>
-      <div class="sub">Porcentaje de uso</div>
-    </div>
+</div>
 
-    <!-- DEFECTOS -->
-    <div class="card">
-      <h3>🚨 Control de Calidad</h3>
-      <canvas id="chartDefectos"></canvas>
-      <div class="valor" id="defectosValor">0</div>
-      <div class="sub">Productos defectuosos</div>
-    </div>
-  </div>
+<h3>LEDs</h3>
 
-  <script>
-    // ============= CONFIGURACIÓN MQTT =============
-    const client = mqtt.connect("wss://gatoo.cloud.shiftr.io", {
-      username: "gatoo",
-      password: "hola"
-    });
+<div>
+Motor A:
+<span id="A1" class="led"></span>
+<span id="A2" class="led"></span>
 
-    const statusDiv = document.getElementById("status");
+&nbsp;&nbsp;&nbsp;
 
-    client.on("connect", () => {
-      statusDiv.innerText = "✅ Conectado al servidor IoT (Shiftr.io)";
-      client.subscribe("factory/status");
-    });
+Motor B:
+<span id="B1" class="led"></span>
+<span id="B2" class="led"></span>
+</div>
 
-    client.on("error", err => {
-      statusDiv.innerText = "❌ Error de conexión MQTT";
-      console.error(err);
-    });
+<br>
 
-    // ============= CONFIGURACIÓN DE GRÁFICOS =============
-    const chartProduccion = new Chart(document.getElementById('chartProduccion'), {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          label: 'Producción por Día',
-          data: [],
-          borderColor: '#007bff',
-          fill: true,
-          backgroundColor: 'rgba(0,123,255,0.2)'
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true } }
-      }
-    });
+Motor A:
+<input id="eA" size="2">
 
-    const chartMaquinas = new Chart(document.getElementById('chartMaquinas'), {
-      type: 'doughnut',
-      data: {
-        labels: ['Activas', 'En Mantenimiento', 'Inactivas'],
-        datasets: [{
-          data: [0, 0, 0],
-          backgroundColor: ['#28a745', '#ffc107', '#dc3545']
-        }]
-      },
-      options: { plugins: { legend: { position: 'bottom' } } }
-    });
+Motor B:
+<input id="eB" size="2">
 
-    const chartInsumos = new Chart(document.getElementById('chartInsumos'), {
-      type: 'bar',
-      data: {
-        labels: ['Materia Prima Usada (%)'],
-        datasets: [{
-          label: 'Uso de Insumos',
-          data: [0],
-          backgroundColor: ['#17a2b8']
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: { y: { beginAtZero: true, max: 100 } },
-        plugins: { legend: { display: false } }
-      }
-    });
+<button onclick="simular()">Simular</button>
 
-    const chartDefectos = new Chart(document.getElementById('chartDefectos'), {
-      type: 'pie',
-      data: {
-        labels: ['Productos OK', 'Defectuosos'],
-        datasets: [{
-          data: [0, 0],
-          backgroundColor: ['#20c997', '#dc3545']
-        }]
-      },
-      options: { plugins: { legend: { position: 'bottom' } } }
-    });
+<br><br>
 
-    // ============= ACTUALIZACIÓN EN TIEMPO REAL =============
-    client.on("message", (topic, message) => {
-      if (topic === "factory/status") {
-        const data = JSON.parse(message.toString());
-        console.log("📩 Datos recibidos:", data);
+<button onclick="cmd('A')">⬆ Adelante</button>
+<button onclick="cmd('B')">⬇ Atrás</button>
+<button onclick="cmd('R')">➡ Derecha</button>
+<button onclick="cmd('L')">⬅ Izquierda</button>
+<button onclick="cmd('S')">⏹ Stop</button>
 
-        const now = new Date().toLocaleTimeString();
+<p id="msg"></p>
 
-        // ===== PANEL SUPERIOR =====
-        document.getElementById("infoProducto").innerText = data.producto || "-";
-        document.getElementById("infoTurno").innerText = data.turno_actual || "-";
-        document.getElementById("infoMeta").innerText = data.meta_mes || 0;
-        document.getElementById("infoProdMes").innerText = data.produccion_mes || 0;
-        document.getElementById("infoGanancias").innerText = "S/ " + (data.ganancias || 0).toFixed(2);
-        document.getElementById("infoComparacion").innerText = (data.comparacion_mes_anterior || 0) + "%";
+<script>
 
-        // ===== PRODUCCIÓN =====
-        if (chartProduccion.data.labels.length > 15) {
-          chartProduccion.data.labels.shift();
-          chartProduccion.data.datasets[0].data.shift();
-        }
-        chartProduccion.data.labels.push(now);
-        chartProduccion.data.datasets[0].data.push(data.produccion_dia || 0);
-        chartProduccion.update();
-        document.getElementById("produccionValor").innerText = data.produccion_dia || 0;
+function led(id,val){
+    document.getElementById(id)
+    .classList.toggle("on", val=="1");
+}
 
-        // ===== MÁQUINAS =====
-        const activas = data.maquinas_activas || 0;
-        const mant = data.maquinas_mantenimiento || 0;
-        const total = data.maquinas_totales || 10;
-        const inactivas = Math.max(0, total - activas - mant);
-        chartMaquinas.data.datasets[0].data = [activas, mant, inactivas];
-        chartMaquinas.update();
-        document.getElementById("maquinasActivas").innerText = activas;
+function motor(id,val){
 
-        // ===== INSUMOS =====
-        chartInsumos.data.datasets[0].data = [data.insumos_porcentaje || 0];
-        chartInsumos.update();
-        document.getElementById("insumosValor").innerText = (data.insumos_porcentaje || 0) + "%";
+    let f="";
 
-        // ===== DEFECTOS =====
-        const ok = Math.max(0, (data.produccion_dia || 0) - (data.defectuosas || 0));
-        chartDefectos.data.datasets[0].data = [ok, data.defectuosas || 0];
-        chartDefectos.update();
-        document.getElementById("defectosValor").innerText = data.defectuosas || 0;
-      }
-    });
-  </script>
+    if(val=="10") f="⬆";
+    if(val=="01") f="⬇";
+
+    document.getElementById(id).innerHTML=f;
+}
+
+function aplicar(a,b){
+
+    led("A1",a[0]);
+    led("A2",a[1]);
+
+    led("B1",b[0]);
+    led("B2",b[1]);
+
+    motor("fa",a);
+    motor("fb",b);
+
+    let t="";
+
+    if(a=="10"&&b=="10") t="⬆ Adelante";
+    else if(a=="01"&&b=="01") t="⬇ Atrás";
+    else if(a=="10"&&b=="00") t="➡ Derecha";
+    else if(a=="00"&&b=="10") t="⬅ Izquierda";
+    else if(a=="00"&&b=="00") t="⏹ Stop";
+
+    document.getElementById("msg").innerText=t;
+}
+
+function simular(){
+
+    let a=document.getElementById("eA").value;
+    let b=document.getElementById("eB").value;
+
+    if(!["00","01","10"].includes(a)
+    || !["00","01","10"].includes(b)){
+        alert("Use 00 01 10");
+        return;
+    }
+
+    aplicar(a,b);
+}
+
+function cmd(c){
+
+    if(c=="A") aplicar("10","10");
+    if(c=="B") aplicar("01","01");
+    if(c=="R") aplicar("10","00");
+    if(c=="L") aplicar("00","10");
+    if(c=="S") aplicar("00","00");
+}
+
+</script>
+
 </body>
 </html>
