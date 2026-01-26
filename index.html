@@ -2,138 +2,90 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Radar Robot Serial</title>
+<title>Simulador Motores DC</title>
 
 <style>
 
 body{
-    background:#050d1a;
-    color:white;
     font-family:Arial;
+    background:#ECF3F9;
     text-align:center;
-}
-
-h1{ color:#00ffcc; }
-
-/* MAPA */
-
-#zona{
-    width:800px;
-    height:450px;
-    margin:auto;
-    background:#081828;
-    border:3px solid cyan;
-    position:relative;
-    overflow:hidden;
 }
 
 /* ROBOT */
 
 #robot{
-    width:60px;
-    height:80px;
-    background:#333;
-    position:absolute;
-    left:370px;
-    top:330px;
-    border:2px solid #00ffcc;
-    border-radius:10px;
-}
-
-#head{
-    width:40px;
-    height:20px;
-    background:#111;
-    position:absolute;
-    top:-22px;
-    left:10px;
-    border-radius:5px;
-}
-
-/* SENSOR */
-
-#sensor{
-    width:6px;
-    height:6px;
-    background:lime;
-    position:absolute;
-    top:-5px;
-    left:27px;
-    border-radius:50%;
-}
-
-#beam{
-    position:absolute;
-    width:3px;
-    height:200px;
-    background:lime;
-    top:-200px;
-    left:28px;
-    transform-origin:bottom center;
-}
-
-/* OBSTACULOS */
-
-.obs{
-    width:40px;
-    height:40px;
-    background:#b30000;
-    position:absolute;
-    border-radius:5px;
-}
-
-/* RADAR */
-
-#radar{
-    width:300px;
-    height:300px;
-    margin:20px auto;
-    background:#02131f;
-    border-radius:50%;
-    border:3px solid #00ffcc;
+    width:650px;
+    height:280px;
+    background:white;
+    margin:auto;
+    border:2px solid black;
     position:relative;
-    overflow:hidden;
 }
 
-#scan{
-    width:3px;
-    height:150px;
-    background:lime;
+/* MOTORES */
+
+.motor{
+    width:110px;
     position:absolute;
-    bottom:150px;
-    left:148px;
-    transform-origin:bottom center;
+    top:120px;
 }
 
-.punto{
-    width:6px;
-    height:6px;
-    background:red;
+#mA{ left:120px; }
+#mB{ right:120px; }
+
+/* FLECHAS (CSS) */
+
+.flecha{
+    font-size:45px;
+    font-weight:bold;
+    position:absolute;
+    top:30px;
+    color:#3498DB;
+}
+
+#fA{ left:150px; }
+#fB{ right:150px; }
+
+/* LEDS */
+
+.led{
+    width:22px;
+    height:22px;
     border-radius:50%;
-    position:absolute;
+    background:gray;
+    display:inline-block;
+    margin:8px;
+    border:1px solid black;
 }
 
 /* PANEL */
 
-#panel{
-    width:800px;
-    margin:auto;
-    display:flex;
-    justify-content:space-around;
-}
-
-.box{
-    border:1px solid cyan;
-    padding:10px;
-    width:200px;
+input{
+    width:55px;
+    font-size:18px;
+    text-align:center;
 }
 
 button{
-    padding:6px 12px;
-    background:#00ffcc;
-    border:none;
-    border-radius:4px;
+    padding:10px;
+    margin:5px;
+    font-size:15px;
     cursor:pointer;
+}
+
+#msg{
+    font-size:20px;
+    font-weight:bold;
+    margin:15px;
+}
+
+/* SERIAL */
+
+#serial{
+    background:#D6EAF8;
+    padding:10px;
+    margin:10px;
 }
 
 </style>
@@ -141,184 +93,209 @@ button{
 
 <body>
 
-<h1>📡 ROBOT CON RADAR SERIAL</h1>
+<h1>SIMULADOR DIDÁCTICO DE MOTORES DC</h1>
 
-<!-- MAPA -->
-
-<div id="zona">
+<!-- ROBOT -->
 
 <div id="robot">
 
-<div id="head"></div>
-<div id="sensor"></div>
-<div id="beam"></div>
+    <img src="motor.png" class="motor" id="mA">
+    <img src="motor.png" class="motor" id="mB">
+
+    <div class="flecha" id="fA">■</div>
+    <div class="flecha" id="fB">■</div>
 
 </div>
 
-<!-- Obstaculos -->
-<div class="obs" style="left:150px;top:100px"></div>
-<div class="obs" style="left:600px;top:150px"></div>
-<div class="obs" style="left:300px;top:220px"></div>
-<div class="obs" style="left:500px;top:70px"></div>
+<!-- LEDS -->
+
+<div>
+
+IN1 <div class="led" id="A1"></div>
+IN2 <div class="led" id="A2"></div>
+
+&nbsp;&nbsp;
+
+IN3 <div class="led" id="B1"></div>
+IN4 <div class="led" id="B2"></div>
 
 </div>
 
-<!-- RADAR -->
+<!-- ENTRADAS -->
 
-<h2>RADAR</h2>
+<div>
 
-<div id="radar">
-    <div id="scan"></div>
-</div>
+Motor A:
+<input id="inA" value="00">
 
-<!-- PANEL -->
+Motor B:
+<input id="inB" value="00">
 
-<div id="panel">
-
-<div class="box">
-<h3>Control</h3>
-<button onclick="startRadar()">▶ Iniciar</button><br><br>
-<button onclick="stopRadar()">⏹ Detener</button>
-</div>
-
-<div class="box">
-<h3>Datos Serial</h3>
-<p>Ángulo:</p>
-<h2 id="ang">0°</h2>
-<p>Distancia:</p>
-<h2 id="dist">0 cm</h2>
-</div>
-
-<div class="box">
-<h3>Estado</h3>
-<p id="estado">Listo</p>
-</div>
-
-<div class="box">
-<h3>Puerto</h3>
-<button onclick="conectar()">🔌 Conectar</button>
-<p id="serial">No conectado</p>
-</div>
+<button onclick="simular()">SIMULAR</button>
 
 </div>
+
+<!-- CONTROLES -->
+
+<div>
+
+<button onclick="mover('ADELANTE')">⬆ Adelante</button>
+<button onclick="mover('ATRAS')">⬇ Atrás</button>
+<button onclick="mover('DERECHA')">➡ Derecha</button>
+<button onclick="mover('IZQUIERDA')">⬅ Izquierda</button>
+<button onclick="mover('STOP')">⏹ Stop</button>
+
+</div>
+
+<!-- SERIAL -->
+
+<div id="serial">
+
+Modo:
+
+<select id="modo">
+    <option value="SIM">Simulado</option>
+    <option value="SERIAL">Serial Real</option>
+</select>
+
+<button onclick="conectar()">Conectar USB</button>
+
+</div>
+
+<div id="msg">Listo</div>
+
+<!-- ================= JS ================= -->
 
 <script>
 
-/* SERIAL */
 let port;
 let writer;
-let conectado=false;
+
+/* LED */
+
+function led(id,v){
+
+    document.getElementById(id).style.background =
+    (v=="1")?"lime":"gray";
+}
+
+/* Flechas */
+
+function flecha(id,v){
+
+    let f="■";
+
+    if(v=="10") f="▲";
+    if(v=="01") f="▼";
+
+    document.getElementById(id).innerText=f;
+}
+
+/* Movimiento */
+
+function texto(a,b){
+
+    if(a=="10" && b=="10") return "⬆ ADELANTE";
+    if(a=="01" && b=="01") return "⬇ ATRÁS";
+    if(a=="10" && b=="00") return "➡ DERECHA";
+    if(a=="00" && b=="10") return "⬅ IZQUIERDA";
+    if(a=="00" && b=="00") return "⏹ STOP";
+
+    return "↕ MIXTO";
+}
+
+/* Actualizar UI */
+
+function actualizar(a,b){
+
+    led("A1",a[0]);
+    led("A2",a[1]);
+    led("B1",b[0]);
+    led("B2",b[1]);
+
+    flecha("fA",a);
+    flecha("fB",b);
+
+    document.getElementById("msg").innerText=
+    texto(a,b);
+}
+
+/* Botones */
+
+async function mover(m){
+
+    let a,b,c;
+
+    if(m=="ADELANTE"){a="10";b="10";c="F";}
+    if(m=="ATRAS"){a="01";b="01";c="B";}
+    if(m=="DERECHA"){a="10";b="00";c="R";}
+    if(m=="IZQUIERDA"){a="00";b="10";c="L";}
+    if(m=="STOP"){a="00";b="00";c="S";}
+
+    document.getElementById("inA").value=a;
+    document.getElementById("inB").value=b;
+
+    actualizar(a,b);
+
+    await enviarSerial(c);
+}
+
+/* Simular */
+
+function simular(){
+
+    let a=inA.value;
+    let b=inB.value;
+
+    if(!["00","01","10"].includes(a) ||
+       !["00","01","10"].includes(b)){
+
+        msg.innerText="Error: 00 01 10";
+        return;
+    }
+
+    actualizar(a,b);
+}
+
+/* SERIAL REAL */
 
 async function conectar(){
 
+    if(!("serial" in navigator)){
+        alert("Tu navegador no soporta WebSerial");
+        return;
+    }
+
     try{
+
         port = await navigator.serial.requestPort();
         await port.open({ baudRate:9600 });
+
         writer = port.writable.getWriter();
-        conectado=true;
-        serial.innerText="Conectado";
+
+        msg.innerText="Conectado al Arduino";
+
+    }catch(e){
+
+        msg.innerText="Error de conexión";
     }
-    catch(e){ alert("Error Serial"); }
 }
 
-async function enviar(txt){
-    if(!conectado) return;
-    let data=new TextEncoder().encode(txt);
+/* Enviar */
+
+async function enviarSerial(c){
+
+    if(modo.value!="SERIAL") return;
+
+    if(!writer){
+        msg.innerText="No conectado";
+        return;
+    }
+
+    const data = new TextEncoder().encode(c);
+
     await writer.write(data);
-}
 
-/* RADAR */
-
-let angle=0;
-let timer=null;
-
-const scan=document.getElementById("scan");
-const beam=document.getElementById("beam");
-const radar=document.getElementById("radar");
-
-function startRadar(){
-
-    if(timer) return;
-
-    estado.innerText="Escaneando";
-
-    timer=setInterval(()=>{
-
-        angle+=2;
-        if(angle>180) angle=0;
-
-        scan.style.transform=`rotate(${angle}deg)`;
-        beam.style.transform=`rotate(${angle}deg)`;
-
-        let d=medir(angle);
-
-        ang.innerText=angle+"°";
-        dist.innerText=d+" cm";
-
-        enviar(angle+","+d+"\n");
-
-        pintarRadar(angle,d);
-
-    },50);
-}
-
-function stopRadar(){
-
-    clearInterval(timer);
-    timer=null;
-    estado.innerText="Detenido";
-}
-
-/* MEDICION */
-
-function medir(a){
-
-    let min=200;
-    let obs=document.querySelectorAll(".obs");
-
-    let rad=a*Math.PI/180;
-
-    let ox=400;
-    let oy=370;
-
-    obs.forEach(o=>{
-
-        let x=o.offsetLeft+20;
-        let y=o.offsetTop+20;
-
-        let dx=x-ox;
-        let dy=oy-y;
-
-        let ang=Math.atan2(dx,dy)*180/Math.PI;
-
-        if(Math.abs(ang-a)<4){
-
-            let d=Math.sqrt(dx*dx+dy*dy);
-            if(d<min) min=d;
-        }
-    });
-
-    return Math.round(min);
-}
-
-/* RADAR PLOT */
-
-function pintarRadar(a,d){
-
-    let r=150;
-    let rad=a*Math.PI/180;
-
-    let x=150 + (d/200*r)*Math.sin(rad);
-    let y=150 - (d/200*r)*Math.cos(rad);
-
-    let p=document.createElement("div");
-    p.className="punto";
-    p.style.left=x+"px";
-    p.style.top=y+"px";
-
-    radar.appendChild(p);
-
-    setTimeout(()=>p.remove(),1000);
 }
 
 </script>
