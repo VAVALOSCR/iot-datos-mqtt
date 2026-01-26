@@ -2,9 +2,10 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Simulador Motores DC</title>
+<title>Simulador Motores con Serial</title>
 
 <style>
+
 body{
     font-family: Arial;
     background:#ecf3f9;
@@ -12,10 +13,10 @@ body{
 }
 
 #robot{
-    width:600px;
-    height:260px;
-    margin:auto;
+    width:650px;
+    height:280px;
     background:white;
+    margin:auto;
     border:2px solid black;
     position:relative;
 }
@@ -23,92 +24,205 @@ body{
 .motor{
     width:80px;
     position:absolute;
-    top:120px;
+    top:140px;
 }
 
-#A{left:80px;}
-#B{right:80px;}
+#motorA{ left:120px; }
+#motorB{ right:120px; }
 
 .flecha{
     font-size:40px;
     position:absolute;
-    top:20px;
+    top:-50px;
     width:100%;
 }
 
 .led{
-    width:20px;
-    height:20px;
+    width:22px;
+    height:22px;
     border-radius:50%;
     background:gray;
     display:inline-block;
     margin:5px;
+    border:1px solid black;
 }
 
-.on{background:lime;}
+.on{ background:lime; }
+
+input{
+    width:50px;
+    text-align:center;
+    font-size:16px;
+}
+
+button{
+    padding:8px 12px;
+    margin:5px;
+    font-size:14px;
+    cursor:pointer;
+}
+
+.box{
+    background:white;
+    border:1px solid #aaa;
+    margin:10px;
+    padding:10px;
+}
+
 </style>
 </head>
 
 <body>
 
-<h1>Simulador Didáctico de Motores</h1>
+<h1>SIMULADOR MOTORES CON SERIAL WEB</h1>
+
+<!-- ROBOT -->
 
 <div id="robot">
 
-    <div id="A" class="motor">
-        <div class="flecha" id="fa"></div>
-        <img src="motor.png" width="80">
-    </div>
+<div id="motorA" class="motor">
+    <div class="flecha" id="fa"></div>
+    <img src="motor.png" width="80">
+</div>
 
-    <div id="B" class="motor">
-        <div class="flecha" id="fb"></div>
-        <img src="motor.png" width="80">
-    </div>
+<div id="motorB" class="motor">
+    <div class="flecha" id="fb"></div>
+    <img src="motor.png" width="80">
+</div>
 
 </div>
 
+<!-- LEDS -->
+
+<div class="box">
+
 <h3>LEDs</h3>
 
-<div>
 Motor A:
 <span id="A1" class="led"></span>
 <span id="A2" class="led"></span>
 
-&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;
 
 Motor B:
 <span id="B1" class="led"></span>
 <span id="B2" class="led"></span>
+
 </div>
 
-<br>
+<!-- ENTRADAS -->
+
+<div class="box">
+
+<h3>Entradas</h3>
 
 Motor A:
-<input id="eA" size="2">
+<input id="eA">
 
 Motor B:
-<input id="eB" size="2">
+<input id="eB">
 
 <button onclick="simular()">Simular</button>
 
-<br><br>
+</div>
+
+<!-- ASIGNAR -->
+
+<div class="box">
+
+<h3>Asignar Caracteres</h3>
+
+Adelante <input id="cA" value="F">
+Atrás <input id="cB" value="B">
+Derecha <input id="cR" value="R">
+Izquierda <input id="cL" value="L">
+STOP <input id="cS" value="S">
+
+</div>
+
+<!-- SERIAL -->
+
+<div class="box">
+
+<h3>Puerto Serial</h3>
+
+<button onclick="conectar()">🔌 Conectar Arduino</button>
+<span id="estado">No conectado</span>
+
+</div>
+
+<!-- BOTONES -->
+
+<div class="box">
+
+<h3>Control</h3>
 
 <button onclick="cmd('A')">⬆ Adelante</button>
 <button onclick="cmd('B')">⬇ Atrás</button>
 <button onclick="cmd('R')">➡ Derecha</button>
 <button onclick="cmd('L')">⬅ Izquierda</button>
-<button onclick="cmd('S')">⏹ Stop</button>
+<button onclick="cmd('S')">⏹ STOP</button>
 
-<p id="msg"></p>
+</div>
+
+<p id="msg" style="font-size:18px;font-weight:bold;"></p>
 
 <script>
+
+// ================= VARIABLES SERIAL =================
+
+let port;
+let writer;
+let conectado=false;
+
+
+// ================= CONECTAR =================
+
+async function conectar(){
+
+    try{
+
+        port = await navigator.serial.requestPort();
+
+        await port.open({ baudRate:9600 });
+
+        writer = port.writable.getWriter();
+
+        conectado=true;
+
+        document.getElementById("estado").innerText="Conectado";
+
+    }catch(e){
+
+        alert("No se pudo conectar");
+
+    }
+}
+
+
+// ================= ENVIAR =================
+
+async function enviarSerial(txt){
+
+    if(!conectado) return;
+
+    const data = new TextEncoder().encode(txt);
+
+    await writer.write(data);
+}
+
+
+// ================= LED =================
 
 function led(id,val){
     document.getElementById(id)
     .classList.toggle("on", val=="1");
 }
 
-function motor(id,val){
+
+// ================= FLECHA =================
+
+function flecha(id,val){
 
     let f="";
 
@@ -118,27 +232,37 @@ function motor(id,val){
     document.getElementById(id).innerHTML=f;
 }
 
+
+// ================= APLICAR =================
+
 function aplicar(a,b){
 
+    // LEDs
     led("A1",a[0]);
     led("A2",a[1]);
 
     led("B1",b[0]);
     led("B2",b[1]);
 
-    motor("fa",a);
-    motor("fb",b);
+    // Flechas
+    flecha("fa",a);
+    flecha("fb",b);
 
+    // Texto
     let t="";
 
-    if(a=="10"&&b=="10") t="⬆ Adelante";
-    else if(a=="01"&&b=="01") t="⬇ Atrás";
-    else if(a=="10"&&b=="00") t="➡ Derecha";
-    else if(a=="00"&&b=="10") t="⬅ Izquierda";
-    else if(a=="00"&&b=="00") t="⏹ Stop";
+    if(a=="10"&&b=="10") t="⬆ ADELANTE";
+    else if(a=="01"&&b=="01") t="⬇ ATRÁS";
+    else if(a=="10"&&b=="00") t="➡ DERECHA";
+    else if(a=="00"&&b=="10") t="⬅ IZQUIERDA";
+    else if(a=="00"&&b=="00") t="⏹ STOP";
+    else t="↕ MIXTO";
 
     document.getElementById("msg").innerText=t;
 }
+
+
+// ================= SIMULAR =================
 
 function simular(){
 
@@ -147,20 +271,57 @@ function simular(){
 
     if(!["00","01","10"].includes(a)
     || !["00","01","10"].includes(b)){
-        alert("Use 00 01 10");
+        alert("Use: 00, 01 o 10");
         return;
     }
 
     aplicar(a,b);
 }
 
-function cmd(c){
 
-    if(c=="A") aplicar("10","10");
-    if(c=="B") aplicar("01","01");
-    if(c=="R") aplicar("10","00");
-    if(c=="L") aplicar("00","10");
-    if(c=="S") aplicar("00","00");
+// ================= COMANDOS =================
+
+async function cmd(c){
+
+    let a="",b="",letra="";
+
+    if(c=="A"){
+        a="10"; b="10";
+        letra=cA.value;
+    }
+
+    if(c=="B"){
+        a="01"; b="01";
+        letra=cB.value;
+    }
+
+    if(c=="R"){
+        a="10"; b="00";
+        letra=cR.value;
+    }
+
+    if(c=="L"){
+        a="00"; b="10";
+        letra=cL.value;
+    }
+
+    if(c=="S"){
+        a="00"; b="00";
+        letra=cS.value;
+    }
+
+    // Mostrar
+    eA.value=a;
+    eB.value=b;
+
+    aplicar(a,b);
+
+    // Enviar a Arduino
+    await enviarSerial(letra);
+
+    document.getElementById("msg").innerText +=
+        conectado ? " | Enviado: "+letra
+                  : " | (No conectado)";
 }
 
 </script>
