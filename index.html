@@ -2,51 +2,44 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Robot Móvil - Proyecto Final</title>
+<title>Radar Robot Serial</title>
 
 <style>
 
-/* ===== GENERAL ===== */
-
 body{
-    background:#08131f;
-    font-family:Arial;
+    background:#050d1a;
     color:white;
+    font-family:Arial;
     text-align:center;
 }
 
-h1{
-    color:#00ffcc;
-}
+h1{ color:#00ffcc; }
 
-/* ===== MAPA ===== */
+/* MAPA */
 
-#mapa{
+#zona{
     width:800px;
     height:450px;
-    background:#111;
     margin:auto;
-    border:4px solid cyan;
+    background:#081828;
+    border:3px solid cyan;
     position:relative;
     overflow:hidden;
 }
 
-/* ===== ROBOT ===== */
+/* ROBOT */
 
 #robot{
     width:60px;
     height:80px;
     background:#333;
-    border:2px solid #00ffcc;
     position:absolute;
-    left:100px;
-    top:200px;
+    left:370px;
+    top:330px;
+    border:2px solid #00ffcc;
     border-radius:10px;
-
-    transition:0.15s;
 }
 
-/* Cabeza */
 #head{
     width:40px;
     height:20px;
@@ -54,72 +47,77 @@ h1{
     position:absolute;
     top:-22px;
     left:10px;
-    border-radius:6px;
+    border-radius:5px;
 }
 
-.eye{
+/* SENSOR */
+
+#sensor{
+    width:6px;
+    height:6px;
+    background:lime;
+    position:absolute;
+    top:-5px;
+    left:27px;
+    border-radius:50%;
+}
+
+#beam{
+    position:absolute;
+    width:3px;
+    height:200px;
+    background:lime;
+    top:-200px;
+    left:28px;
+    transform-origin:bottom center;
+}
+
+/* OBSTACULOS */
+
+.obs{
+    width:40px;
+    height:40px;
+    background:#b30000;
+    position:absolute;
+    border-radius:5px;
+}
+
+/* RADAR */
+
+#radar{
+    width:300px;
+    height:300px;
+    margin:20px auto;
+    background:#02131f;
+    border-radius:50%;
+    border:3px solid #00ffcc;
+    position:relative;
+    overflow:hidden;
+}
+
+#scan{
+    width:3px;
+    height:150px;
+    background:lime;
+    position:absolute;
+    bottom:150px;
+    left:148px;
+    transform-origin:bottom center;
+}
+
+.punto{
     width:6px;
     height:6px;
     background:red;
     border-radius:50%;
     position:absolute;
-    top:7px;
 }
 
-#eye1{ left:6px; }
-#eye2{ right:6px; }
-
-/* Ruedas */
-
-.wheel{
-    width:14px;
-    height:20px;
-    background:#888;
-    position:absolute;
-    border-radius:3px;
-}
-
-#w1{ left:-14px; top:15px; }
-#w2{ left:-14px; bottom:15px; }
-#w3{ right:-14px; top:15px; }
-#w4{ right:-14px; bottom:15px; }
-
-/* ===== SENSOR ===== */
-
-#sensor{
-    position:absolute;
-    width:4px;
-    height:4px;
-    background:lime;
-    left:28px;
-    top:-5px;
-}
-
-#rayo{
-    position:absolute;
-    width:3px;
-    background:lime;
-    top:-200px;
-    left:28px;
-    height:0px;
-}
-
-/* ===== OBSTACULOS ===== */
-
-.obstaculo{
-    width:50px;
-    height:50px;
-    background:#aa0000;
-    position:absolute;
-    border-radius:5px;
-}
-
-/* ===== PANEL ===== */
+/* PANEL */
 
 #panel{
     width:800px;
     margin:auto;
-    margin-top:10px;
     display:flex;
     justify-content:space-around;
 }
@@ -127,10 +125,8 @@ h1{
 .box{
     border:1px solid cyan;
     padding:10px;
-    width:180px;
+    width:200px;
 }
-
-/* BOTONES */
 
 button{
     padding:6px 12px;
@@ -140,43 +136,39 @@ button{
     cursor:pointer;
 }
 
-button:hover{
-    background:#00ccaa;
-}
-
 </style>
 </head>
 
 <body>
 
-<h1>🤖 ROBOT MÓVIL - PROYECTO FINAL</h1>
+<h1>📡 ROBOT CON RADAR SERIAL</h1>
 
-<div id="mapa">
+<!-- MAPA -->
 
-<!-- ROBOT -->
+<div id="zona">
 
 <div id="robot">
 
-<div id="head">
-    <div id="eye1" class="eye"></div>
-    <div id="eye2" class="eye"></div>
-</div>
-
-<div class="wheel" id="w1"></div>
-<div class="wheel" id="w2"></div>
-<div class="wheel" id="w3"></div>
-<div class="wheel" id="w4"></div>
-
+<div id="head"></div>
 <div id="sensor"></div>
-<div id="rayo"></div>
+<div id="beam"></div>
 
 </div>
 
-<!-- OBSTACULOS -->
-<div class="obstaculo" style="left:400px;top:100px"></div>
-<div class="obstaculo" style="left:600px;top:300px"></div>
-<div class="obstaculo" style="left:300px;top:250px"></div>
+<!-- Obstaculos -->
+<div class="obs" style="left:150px;top:100px"></div>
+<div class="obs" style="left:600px;top:150px"></div>
+<div class="obs" style="left:300px;top:220px"></div>
+<div class="obs" style="left:500px;top:70px"></div>
 
+</div>
+
+<!-- RADAR -->
+
+<h2>RADAR</h2>
+
+<div id="radar">
+    <div id="scan"></div>
 </div>
 
 <!-- PANEL -->
@@ -185,22 +177,16 @@ button:hover{
 
 <div class="box">
 <h3>Control</h3>
-<button onclick="adelante()">⬆</button><br><br>
-<button onclick="izq()">⬅</button>
-<button onclick="stop()">⏹</button>
-<button onclick="der()">➡</button><br><br>
-<button onclick="atras()">⬇</button>
+<button onclick="startRadar()">▶ Iniciar</button><br><br>
+<button onclick="stopRadar()">⏹ Detener</button>
 </div>
 
 <div class="box">
-<h3>Ultrasónico</h3>
+<h3>Datos Serial</h3>
+<p>Ángulo:</p>
+<h2 id="ang">0°</h2>
 <p>Distancia:</p>
 <h2 id="dist">0 cm</h2>
-</div>
-
-<div class="box">
-<h3>Puntaje</h3>
-<h2 id="score">0</h2>
 </div>
 
 <div class="box">
@@ -208,132 +194,132 @@ button:hover{
 <p id="estado">Listo</p>
 </div>
 
+<div class="box">
+<h3>Puerto</h3>
+<button onclick="conectar()">🔌 Conectar</button>
+<p id="serial">No conectado</p>
+</div>
+
 </div>
 
 <script>
 
-/* POSICION */
+/* SERIAL */
+let port;
+let writer;
+let conectado=false;
 
-let x=100;
-let y=200;
-let vel=8;
+async function conectar(){
 
-let score=0;
-
-const robot=document.getElementById("robot");
-const rayo=document.getElementById("rayo");
-const dist=document.getElementById("dist");
-const estado=document.getElementById("estado");
-
-/* MOVER */
-
-function mover(){
-
-    robot.style.left=x+"px";
-    robot.style.top=y+"px";
-
-    medir();
-    colision();
+    try{
+        port = await navigator.serial.requestPort();
+        await port.open({ baudRate:9600 });
+        writer = port.writable.getWriter();
+        conectado=true;
+        serial.innerText="Conectado";
+    }
+    catch(e){ alert("Error Serial"); }
 }
 
-/* COMANDOS */
-
-function adelante(){
-    y-=vel;
-    mover();
+async function enviar(txt){
+    if(!conectado) return;
+    let data=new TextEncoder().encode(txt);
+    await writer.write(data);
 }
 
-function atras(){
-    y+=vel;
-    mover();
+/* RADAR */
+
+let angle=0;
+let timer=null;
+
+const scan=document.getElementById("scan");
+const beam=document.getElementById("beam");
+const radar=document.getElementById("radar");
+
+function startRadar(){
+
+    if(timer) return;
+
+    estado.innerText="Escaneando";
+
+    timer=setInterval(()=>{
+
+        angle+=2;
+        if(angle>180) angle=0;
+
+        scan.style.transform=`rotate(${angle}deg)`;
+        beam.style.transform=`rotate(${angle}deg)`;
+
+        let d=medir(angle);
+
+        ang.innerText=angle+"°";
+        dist.innerText=d+" cm";
+
+        enviar(angle+","+d+"\n");
+
+        pintarRadar(angle,d);
+
+    },50);
 }
 
-function izq(){
-    x-=vel;
-    mover();
+function stopRadar(){
+
+    clearInterval(timer);
+    timer=null;
+    estado.innerText="Detenido";
 }
 
-function der(){
-    x+=vel;
-    mover();
-}
+/* MEDICION */
 
-function stop(){
-    estado.innerText="STOP";
-}
+function medir(a){
 
-/* SENSOR */
+    let min=200;
+    let obs=document.querySelectorAll(".obs");
 
-function medir(){
+    let rad=a*Math.PI/180;
 
-    let min=300;
-
-    let obs=document.querySelectorAll(".obstaculo");
+    let ox=400;
+    let oy=370;
 
     obs.forEach(o=>{
 
-        let ox=o.offsetLeft;
-        let oy=o.offsetTop;
+        let x=o.offsetLeft+20;
+        let y=o.offsetTop+20;
 
-        let dx=(ox+25)-(x+30);
-        let dy=(oy+25)-(y);
+        let dx=x-ox;
+        let dy=oy-y;
 
-        if(dy<0 && Math.abs(dx)<40){
+        let ang=Math.atan2(dx,dy)*180/Math.PI;
 
-            let d=Math.abs(dy);
+        if(Math.abs(ang-a)<4){
 
+            let d=Math.sqrt(dx*dx+dy*dy);
             if(d<min) min=d;
         }
     });
 
-    dist.innerText=min+" cm";
-
-    rayo.style.height=min+"px";
+    return Math.round(min);
 }
 
-/* COLISION */
+/* RADAR PLOT */
 
-function colision(){
+function pintarRadar(a,d){
 
-    let obs=document.querySelectorAll(".obstaculo");
+    let r=150;
+    let rad=a*Math.PI/180;
 
-    obs.forEach(o=>{
+    let x=150 + (d/200*r)*Math.sin(rad);
+    let y=150 - (d/200*r)*Math.cos(rad);
 
-        let ox=o.offsetLeft;
-        let oy=o.offsetTop;
+    let p=document.createElement("div");
+    p.className="punto";
+    p.style.left=x+"px";
+    p.style.top=y+"px";
 
-        if(
-           x<ox+50 &&
-           x+60>ox &&
-           y<oy+50 &&
-           y+80>oy
-        ){
+    radar.appendChild(p);
 
-            score-=5;
-            score=Math.max(0,score);
-
-            document.getElementById("score").innerText=score;
-
-            estado.innerText="💥 CHOQUE";
-        }
-        else{
-            score++;
-            document.getElementById("score").innerText=score;
-        }
-    });
+    setTimeout(()=>p.remove(),1000);
 }
-
-/* TECLADO */
-
-document.addEventListener("keydown",e=>{
-
-    if(e.key=="ArrowUp") adelante();
-    if(e.key=="ArrowDown") atras();
-    if(e.key=="ArrowLeft") izq();
-    if(e.key=="ArrowRight") der();
-    if(e.key==" ") stop();
-
-});
 
 </script>
 
