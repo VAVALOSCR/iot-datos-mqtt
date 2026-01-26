@@ -1,486 +1,333 @@
-import tkinter as tk
-from tkinter import *
-from tkinter import ttk
-from PIL import Image, ImageDraw, ImageFont, ImageTk
-import serial
-import serial.tools.list_ports
-import os
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Simulador Motores con Serial</title>
+
+<style>
+
+body{
+    font-family: Arial;
+    background:#ecf3f9;
+    text-align:center;
+}
+
+/* ROBOT */
+
+#robot{
+    width:650px;
+    height:280px;
+    background:white;
+    margin:auto;
+    border:2px solid black;
+    position:relative;
+}
 
+.motor{
+    width:80px;
+    position:absolute;
+    top:140px;
+}
 
-# ===============================
-# CREAR IMÁGENES DE FLECHAS
-# ===============================
+#motorA{ left:120px; }
+#motorB{ right:120px; }
 
-def crear_estado(nombre, flecha):
+.flecha{
+    font-size:40px;
+    position:absolute;
+    top:-50px;
+    width:100%;
+}
 
-    w, h = 80, 80
-    img = Image.new("RGB", (w, h), "white")
-    d = ImageDraw.Draw(img)
+/* LEDS */
 
-    try:
-        f = ImageFont.truetype("arial.ttf", 35)
-    except:
-        f = ImageFont.load_default()
+.led{
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    background:gray;
+    display:inline-block;
+    margin:5px;
+    border:1px solid black;
+}
 
-    d.text((25,20), flecha, fill="blue", font=f)
-    img.save(nombre)
+.on{
+    background:lime;
+}
 
+/* CONTROLES */
 
-def generar_estados():
+input{
+    width:50px;
+    text-align:center;
+    font-size:16px;
+}
 
-    if not os.path.exists("imagenes"):
-        os.mkdir("imagenes")
+button{
+    padding:8px 12px;
+    margin:5px;
+    font-size:14px;
+    cursor:pointer;
+}
 
-    crear_estado("imagenes/up.png", "↑")
-    crear_estado("imagenes/down.png", "↓")
-    crear_estado("imagenes/stop.png", " ")
+.box{
+    background:white;
+    border:1px solid #aaa;
+    margin:10px;
+    padding:10px;
+}
 
+</style>
+</head>
 
-# ===============================
-# APP PRINCIPAL
-# ===============================
+<body>
 
-class Simulador:
+<h1>SIMULADOR MOTORES CON SERIAL WEB</h1>
 
-    def __init__(self, root):
+<!-- ROBOT -->
 
-        self.root = root
-        self.root.title("Simulador Didáctico de Motores DC")
-        self.root.geometry("980x780")
-        self.root.configure(bg="#ECF3F9")
+<div id="robot">
 
-        generar_estados()
+    <div id="motorA" class="motor">
+        <div class="flecha" id="fa"></div>
+        <img src="motor.png" width="80">
+    </div>
 
-        self.serial = None
+    <div id="motorB" class="motor">
+        <div class="flecha" id="fb"></div>
+        <img src="motor.png" width="80">
+    </div>
 
+</div>
 
-        # ================= TITULO =================
+<!-- LEDS -->
 
-        Label(root,
-              text="SIMULADOR DIDÁCTICO DE MOTORES",
-              font=("Arial",24,"bold"),
-              bg="#ECF3F9").pack(pady=10)
+<div class="box">
 
+<h3>LEDs</h3>
 
-        # ================= PANEL PRINCIPAL =================
+Motor A:
+<span id="A1" class="led"></span>
+<span id="A2" class="led"></span>
 
-        panel = Frame(root,bg="#ECF3F9")
-        panel.pack()
+&nbsp;&nbsp;
 
+Motor B:
+<span id="B1" class="led"></span>
+<span id="B2" class="led"></span>
 
-        # ================= CANVAS ROBOT =================
+</div>
 
-        self.canvas = Canvas(panel,
-                             width=650,
-                             height=280,
-                             bg="white")
-        self.canvas.grid(row=0,column=0,
-                         columnspan=6,pady=10)
+<!-- ENTRADAS -->
 
-        self.canvas.create_rectangle(220,60,430,230,width=3)
-        self.canvas.create_text(325,145,text="ROBOT",
-                                font=("Arial",14,"bold"))
+<div class="box">
 
+<h3>Entradas</h3>
 
-        # ================= MOTOR BASE (60%) =================
+Motor A:
+<input id="eA">
 
-        if not os.path.exists("motor.png"):
-            raise FileNotFoundError("Debe existir motor.png")
+Motor B:
+<input id="eB">
 
-        img = Image.open("motor.png")
-        w,h = img.size
+<button onclick="simular()">Simular</button>
 
-        img = img.resize((int(w*0.6),int(h*0.6)),
-                         Image.LANCZOS)
+</div>
 
-        self.motor_base = ImageTk.PhotoImage(img)
+<!-- ASIGNAR -->
 
+<div class="box">
 
-        # ================= ESTADOS =================
+<h3>Asignar Caracteres</h3>
 
-        self.estados = {
-            "up": PhotoImage(file="imagenes/up.png"),
-            "down": PhotoImage(file="imagenes/down.png"),
-            "stop": PhotoImage(file="imagenes/stop.png")
-        }
+Adelante <input id="cA" value="F">
+Atrás <input id="cB" value="B">
+Derecha <input id="cR" value="R">
+Izquierda <input id="cL" value="L">
+STOP <input id="cS" value="S">
 
+</div>
 
-        # Motores
-        self.motorA = self.canvas.create_image(
-            190,150,image=self.motor_base)
+<!-- SERIAL -->
 
-        self.motorB = self.canvas.create_image(
-            460,150,image=self.motor_base)
+<div class="box">
 
-        # Flechas
-        self.estadoA = self.canvas.create_image(
-            190,70,image=self.estados["stop"])
+<h3>Puerto Serial</h3>
 
-        self.estadoB = self.canvas.create_image(
-            460,70,image=self.estados["stop"])
+<button onclick="conectar()">🔌 Conectar Arduino</button>
+<span id="estado">No conectado</span>
 
+</div>
 
-        # ================= LEDs =================
+<!-- BOTONES -->
 
-        leds = Frame(panel,bg="#ECF3F9")
-        leds.grid(row=1,column=0,
-                  columnspan=6,pady=5)
+<div class="box">
 
-        self.ca = Canvas(leds,
-                         width=500,
-                         height=90,
-                         bg="#ECF3F9",
-                         highlightthickness=0)
+<h3>Control</h3>
 
-        self.ca.pack()
+<button onclick="cmd('A')">⬆ Adelante</button>
+<button onclick="cmd('B')">⬇ Atrás</button>
+<button onclick="cmd('R')">➡ Derecha</button>
+<button onclick="cmd('L')">⬅ Izquierda</button>
+<button onclick="cmd('S')">⏹ STOP</button>
 
-        self.leds = {
-            "A1": self.ca.create_oval(60,20,90,50,fill="gray"),
-            "A2": self.ca.create_oval(110,20,140,50,fill="gray"),
-            "B1": self.ca.create_oval(300,20,330,50,fill="gray"),
-            "B2": self.ca.create_oval(350,20,380,50,fill="gray")
-        }
+</div>
 
-        self.ca.create_text(75,65,text="IN1")
-        self.ca.create_text(125,65,text="IN2")
-        self.ca.create_text(315,65,text="IN3")
-        self.ca.create_text(365,65,text="IN4")
+<p id="msg" style="font-size:18px;font-weight:bold;"></p>
 
+<script>
 
-        # ================= ENTRADAS =================
+/* ================= SERIAL ================= */
 
-        ent = Frame(panel,bg="#ECF3F9")
-        ent.grid(row=2,column=0,columnspan=6,pady=10)
+let port;
+let writer;
+let conectado = false;
 
-        Label(ent,text="Motor A (Izq):",
-              font=("Arial",13),
-              bg="#ECF3F9").grid(row=0,column=0)
+/* ================= CONECTAR ================= */
 
-        self.eA = Entry(ent,font=("Arial",15),
-                        width=4,justify="center")
-        self.eA.grid(row=0,column=1,padx=5)
+async function conectar(){
 
-        Label(ent,text="Motor B (Der):",
-              font=("Arial",13),
-              bg="#ECF3F9").grid(row=0,column=2)
+    try{
 
-        self.eB = Entry(ent,font=("Arial",15),
-                        width=4,justify="center")
-        self.eB.grid(row=0,column=3,padx=5)
+        port = await navigator.serial.requestPort();
 
-        Button(ent,text="SIMULAR",
-               command=self.simular,
-               bg="#AED6F1").grid(row=0,column=4,padx=10)
+        await port.open({ baudRate:9600 });
 
+        writer = port.writable.getWriter();
 
-        # ================= MENSAJE =================
+        conectado = true;
 
-        self.lbl = Label(panel,
-                         text="Use: 10 / 01 / 00",
-                         font=("Arial",18,"bold"),
-                         bg="#ECF3F9")
+        document.getElementById("estado").innerText = "Conectado";
 
-        self.lbl.grid(row=3,column=0,columnspan=6,pady=10)
+    }catch(e){
 
+        alert("No se pudo conectar");
 
-        # ================= SERIAL =================
+    }
+}
 
-        serial_panel = LabelFrame(
-            root,
-            text="CONFIGURACIÓN SERIAL",
-            font=("Arial",13,"bold"),
-            bg="#ECF3F9"
-        )
+/* ================= ENVIAR ================= */
 
-        serial_panel.pack(fill="x",padx=15,pady=5)
+async function enviarSerial(txt){
 
+    if(!conectado) return;
 
-        self.modo_var = StringVar(value="SIMULADO")
+    const data = new TextEncoder().encode(txt);
 
+    await writer.write(data);
+}
 
-        Radiobutton(serial_panel,text="Simulado",
-                    variable=self.modo_var,
-                    value="SIMULADO",
-                    bg="#ECF3F9").grid(row=0,column=0)
+/* ================= LED ================= */
 
-        Radiobutton(serial_panel,text="Serial",
-                    variable=self.modo_var,
-                    value="SERIAL",
-                    bg="#ECF3F9").grid(row=0,column=1)
+function led(id,val){
 
+    document.getElementById(id)
+    .classList.toggle("on", val=="1");
+}
 
-        Label(serial_panel,text="Puerto:",
-              bg="#ECF3F9").grid(row=0,column=2)
+/* ================= FLECHA ================= */
 
-        self.combo = ttk.Combobox(serial_panel,width=10)
-        self.combo.grid(row=0,column=3,padx=5)
+function flecha(id,val){
 
-        Button(serial_panel,text="Actualizar",
-               command=self.cargar_puertos)\
-               .grid(row=0,column=4)
+    let f="";
 
-        Button(serial_panel,text="Conectar",
-               command=self.conectar)\
-               .grid(row=0,column=5,padx=5)
+    if(val=="10") f="⬆";
+    if(val=="01") f="⬇";
 
+    document.getElementById(id).innerHTML = f;
+}
 
-        # ================= ASIGNACIÓN =================
+/* ================= APLICAR ================= */
 
-        asignar = LabelFrame(
-            root,
-            text="ASIGNAR CARACTERES",
-            font=("Arial",13,"bold"),
-            bg="#ECF3F9")
+function aplicar(a,b){
 
-        asignar.pack(fill="x",padx=15,pady=10)
+    // LEDs
+    led("A1",a[0]);
+    led("A2",a[1]);
 
+    led("B1",b[0]);
+    led("B2",b[1]);
 
-        self.cmd = {}
+    // Flechas
+    flecha("fa",a);
+    flecha("fb",b);
 
-        datos = [
-            ("Adelante","F"),
-            ("Atrás","B"),
-            ("Derecha","R"),
-            ("Izquierda","L"),
-            ("STOP","S")
-        ]
+    // Texto
+    let t="";
 
-        for i,(txt,defv) in enumerate(datos):
+    if(a=="10" && b=="10") t="⬆ ADELANTE";
+    else if(a=="01" && b=="01") t="⬇ ATRÁS";
+    else if(a=="10" && b=="00") t="➡ DERECHA";
+    else if(a=="00" && b=="10") t="⬅ IZQUIERDA";
+    else if(a=="00" && b=="00") t="⏹ STOP";
+    else t="↕ MIXTO";
 
-            Label(asignar,text=txt,
-                  bg="#ECF3F9").grid(row=0,column=i*2)
+    document.getElementById("msg").innerText = t;
+}
 
-            e = Entry(asignar,width=3,
-                      justify="center")
+/* ================= SIMULAR ================= */
 
-            e.insert(0,defv)
-            e.grid(row=0,column=i*2+1,padx=5)
+function simular(){
 
-            self.cmd[txt] = e
+    let a = eA.value;
+    let b = eB.value;
 
+    if(!["00","01","10"].includes(a)
+    || !["00","01","10"].includes(b)){
 
-        # ================= BOTONES CONTROL =================
+        alert("Use: 00, 01 o 10");
+        return;
+    }
 
-        btns = Frame(root,bg="#ECF3F9")
-        btns.pack(pady=10)
+    aplicar(a,b);
+}
 
-        Button(btns,text="⬆ Adelante",
-               width=12,
-               command=lambda:self.enviar("ADELANTE"),
-               bg="#ABEBC6").grid(row=0,column=0,padx=5)
+/* ================= COMANDOS ================= */
 
-        Button(btns,text="⬇ Atrás",
-               width=12,
-               command=lambda:self.enviar("ATRAS"),
-               bg="#F5B7B1").grid(row=0,column=1,padx=5)
+async function cmd(c){
 
-        Button(btns,text="➡ Derecha",
-               width=12,
-               command=lambda:self.enviar("DERECHA"),
-               bg="#AED6F1").grid(row=0,column=2,padx=5)
+    let a="", b="", letra="";
 
-        Button(btns,text="⬅ Izquierda",
-               width=12,
-               command=lambda:self.enviar("IZQUIERDA"),
-               bg="#F9E79F").grid(row=0,column=3,padx=5)
+    if(c=="A"){
+        a="10"; b="10";
+        letra=cA.value;
+    }
 
-        Button(btns,text="⏹ STOP",
-               width=12,
-               command=lambda:self.enviar("STOP"),
-               bg="#D5DBDB").grid(row=0,column=4,padx=5)
+    if(c=="B"){
+        a="01"; b="01";
+        letra=cB.value;
+    }
 
+    if(c=="R"){
+        a="10"; b="00";
+        letra=cR.value;
+    }
 
-        self.cargar_puertos()
+    if(c=="L"){
+        a="00"; b="10";
+        letra=cL.value;
+    }
 
+    if(c=="S"){
+        a="00"; b="00";
+        letra=cS.value;
+    }
 
-    # ===============================
-    # SERIAL
-    # ===============================
+    // Mostrar
+    eA.value = a;
+    eB.value = b;
 
-    def cargar_puertos(self):
+    aplicar(a,b);
 
-        ports = serial.tools.list_ports.comports()
+    // Enviar
+    await enviarSerial(letra);
 
-        lista = [p.device for p in ports]
+    msg.innerText += conectado
+        ? " | Enviado: " + letra
+        : " | (No conectado)";
+}
 
-        self.combo["values"] = lista
+</script>
 
-        if lista:
-            self.combo.current(0)
-
-
-    def conectar(self):
-
-        if self.modo_var.get()!="SERIAL":
-            self.lbl.config(text="Modo SIMULADO activo")
-            return
-
-        try:
-            p = self.combo.get()
-
-            self.serial = serial.Serial(
-                p,9600,timeout=1)
-
-            self.lbl.config(text=f"Conectado a {p}")
-
-        except:
-            self.lbl.config(text="Error al conectar")
-
-
-    # ===============================
-    # ENVIAR COMANDOS
-    # ===============================
-
-    def enviar(self,mov):
-
-        if mov=="ADELANTE":
-            c = self.cmd["Adelante"].get()
-            a,b = "10","10"
-
-        elif mov=="ATRAS":
-            c = self.cmd["Atrás"].get()
-            a,b = "01","01"
-
-        elif mov=="DERECHA":
-            c = self.cmd["Derecha"].get()
-            a,b = "10","00"
-
-        elif mov=="IZQUIERDA":
-            c = self.cmd["Izquierda"].get()
-            a,b = "00","10"
-
-        elif mov=="STOP":
-            c = self.cmd["STOP"].get()
-            a,b = "00","00"
-
-
-        # Actualizar entradas
-        self.eA.delete(0,END)
-        self.eB.delete(0,END)
-        self.eA.insert(0,a)
-        self.eB.insert(0,b)
-
-
-        # LEDs
-        self.led("A1",a[0])
-        self.led("A2",a[1])
-        self.led("B1",b[0])
-        self.led("B2",b[1])
-
-
-        # Flechas
-        self.estado("A",a)
-        self.estado("B",b)
-
-
-        mov_txt = self.movimiento(a,b)
-
-
-        # Serial / Simulado
-        if self.modo_var.get()=="SERIAL" and self.serial:
-            self.serial.write(c.encode())
-            self.lbl.config(text=f"Enviado: {c} | {mov_txt}")
-
-        else:
-            self.lbl.config(text=f"(Simulado) {c} | {mov_txt}")
-
-
-    # ===============================
-    # SIMULAR MANUAL
-    # ===============================
-
-    def simular(self):
-
-        a = self.eA.get()
-        b = self.eB.get()
-
-        if a not in ["00","01","10"] or \
-           b not in ["00","01","10"]:
-
-            self.lbl.config(text="Error: 00 01 10")
-            return
-
-
-        self.led("A1",a[0])
-        self.led("A2",a[1])
-        self.led("B1",b[0])
-        self.led("B2",b[1])
-
-
-        self.estado("A",a)
-        self.estado("B",b)
-
-
-        self.lbl.config(text=self.movimiento(a,b))
-
-
-    # ===============================
-    # ESTADO MOTOR
-    # ===============================
-
-    def estado(self,m,v):
-
-        if v=="10":
-            img="up"
-        elif v=="01":
-            img="down"
-        else:
-            img="stop"
-
-        if m=="A":
-            self.canvas.itemconfig(
-                self.estadoA,
-                image=self.estados[img])
-
-        else:
-            self.canvas.itemconfig(
-                self.estadoB,
-                image=self.estados[img])
-
-
-    # ===============================
-    # LED
-    # ===============================
-
-    def led(self,l,v):
-
-        if v=="1":
-            self.ca.itemconfig(self.leds[l],fill="lime")
-        else:
-            self.ca.itemconfig(self.leds[l],fill="gray")
-
-
-    # ===============================
-    # MOVIMIENTO GENERAL
-    # ===============================
-
-    def movimiento(self,a,b):
-
-        if a=="10" and b=="10":
-            return "⬆ ADELANTE"
-
-        if a=="01" and b=="01":
-            return "⬇ ATRÁS"
-
-        if a=="10" and b=="00":
-            return "➡ DERECHA"
-
-        if a=="00" and b=="10":
-            return "⬅ IZQUIERDA"
-
-        if a=="00" and b=="00":
-            return "⏹ STOP"
-
-        return "↕ MIXTO"
-
-
-
-# ===============================
-# MAIN
-# ===============================
-
-if __name__=="__main__":
-
-    root = tk.Tk()
-    app = Simulador(root)
-    root.mainloop()
+</body>
+</html>
