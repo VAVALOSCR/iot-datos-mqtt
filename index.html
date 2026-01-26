@@ -2,168 +2,146 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Robot Serial Simulator PRO</title>
+<title>Robot Móvil - Proyecto Final</title>
 
 <style>
 
-/* ====== GENERAL ====== */
+/* ===== GENERAL ===== */
 
 body{
-    font-family: Arial;
-    background:linear-gradient(#0f2027,#203a43,#2c5364);
-    text-align:center;
+    background:#08131f;
+    font-family:Arial;
     color:white;
+    text-align:center;
 }
 
 h1{
-    margin-top:10px;
+    color:#00ffcc;
 }
 
-/* ====== ROBOT ====== */
+/* ===== MAPA ===== */
 
-#zona{
+#mapa{
     width:800px;
+    height:450px;
+    background:#111;
     margin:auto;
-    padding:20px;
+    border:4px solid cyan;
+    position:relative;
+    overflow:hidden;
 }
+
+/* ===== ROBOT ===== */
 
 #robot{
-    width:500px;
-    height:220px;
-    background:#222;
-    margin:auto;
-    border-radius:20px;
-    border:4px solid #00ffcc;
-    position:relative;
-    box-shadow:0 0 20px #00ffcc;
+    width:60px;
+    height:80px;
+    background:#333;
+    border:2px solid #00ffcc;
+    position:absolute;
+    left:100px;
+    top:200px;
+    border-radius:10px;
 
-    transition:0.3s;
+    transition:0.15s;
 }
 
 /* Cabeza */
 #head{
-    width:120px;
-    height:60px;
+    width:40px;
+    height:20px;
     background:#111;
     position:absolute;
-    top:-70px;
-    left:190px;
-    border-radius:15px;
-    border:2px solid cyan;
+    top:-22px;
+    left:10px;
+    border-radius:6px;
 }
 
 .eye{
-    width:12px;
-    height:12px;
+    width:6px;
+    height:6px;
     background:red;
     border-radius:50%;
     position:absolute;
-    top:22px;
+    top:7px;
 }
 
-#eye1{ left:30px; }
-#eye2{ right:30px; }
+#eye1{ left:6px; }
+#eye2{ right:6px; }
 
-/* ====== RUEDAS ====== */
+/* Ruedas */
 
 .wheel{
-    width:70px;
-    height:70px;
-    background:#444;
-    border-radius:50%;
-    border:5px solid #999;
-    position:absolute;
-    top:140px;
-
-    display:flex;
-    justify-content:center;
-    align-items:center;
-}
-
-.wheel::after{
-    content:"";
-    width:10px;
-    height:50px;
-    background:white;
-}
-
-#leftWheel{ left:-35px; }
-#rightWheel{ right:-35px; }
-
-/* Animación ruedas */
-.spin{
-    animation:giro 0.5s linear infinite;
-}
-
-@keyframes giro{
-    from{ transform:rotate(0deg); }
-    to{ transform:rotate(360deg); }
-}
-
-/* ====== LEDS ====== */
-
-.led{
-    width:20px;
+    width:14px;
     height:20px;
-    background:gray;
-    border-radius:50%;
-    display:inline-block;
-    margin:5px;
+    background:#888;
+    position:absolute;
+    border-radius:3px;
 }
 
-.on{
+#w1{ left:-14px; top:15px; }
+#w2{ left:-14px; bottom:15px; }
+#w3{ right:-14px; top:15px; }
+#w4{ right:-14px; bottom:15px; }
+
+/* ===== SENSOR ===== */
+
+#sensor{
+    position:absolute;
+    width:4px;
+    height:4px;
     background:lime;
-    box-shadow:0 0 10px lime;
+    left:28px;
+    top:-5px;
 }
 
-/* ====== CAJAS ====== */
+#rayo{
+    position:absolute;
+    width:3px;
+    background:lime;
+    top:-200px;
+    left:28px;
+    height:0px;
+}
+
+/* ===== OBSTACULOS ===== */
+
+.obstaculo{
+    width:50px;
+    height:50px;
+    background:#aa0000;
+    position:absolute;
+    border-radius:5px;
+}
+
+/* ===== PANEL ===== */
+
+#panel{
+    width:800px;
+    margin:auto;
+    margin-top:10px;
+    display:flex;
+    justify-content:space-around;
+}
 
 .box{
-    background:#111;
     border:1px solid cyan;
-    border-radius:10px;
-    margin:10px;
     padding:10px;
+    width:180px;
 }
 
-input{
-    width:50px;
-    text-align:center;
-}
+/* BOTONES */
 
 button{
-    padding:8px 14px;
+    padding:6px 12px;
     background:#00ffcc;
     border:none;
-    border-radius:5px;
+    border-radius:4px;
     cursor:pointer;
-    font-weight:bold;
 }
 
 button:hover{
     background:#00ccaa;
-}
-
-/* ====== MOVIMIENTO ====== */
-
-.forward{
-    transform:translateY(-10px);
-}
-
-.back{
-    transform:translateY(10px);
-}
-
-.left{
-    transform:rotate(-6deg);
-}
-
-.right{
-    transform:rotate(6deg);
-}
-
-.stop{
-    transform:none;
 }
 
 </style>
@@ -171,9 +149,9 @@ button:hover{
 
 <body>
 
-<h1>🤖 SIMULADOR ROBOT SERIAL PRO</h1>
+<h1>🤖 ROBOT MÓVIL - PROYECTO FINAL</h1>
 
-<div id="zona">
+<div id="mapa">
 
 <!-- ROBOT -->
 
@@ -184,224 +162,178 @@ button:hover{
     <div id="eye2" class="eye"></div>
 </div>
 
-<div id="leftWheel" class="wheel"></div>
-<div id="rightWheel" class="wheel"></div>
+<div class="wheel" id="w1"></div>
+<div class="wheel" id="w2"></div>
+<div class="wheel" id="w3"></div>
+<div class="wheel" id="w4"></div>
+
+<div id="sensor"></div>
+<div id="rayo"></div>
 
 </div>
 
+<!-- OBSTACULOS -->
+<div class="obstaculo" style="left:400px;top:100px"></div>
+<div class="obstaculo" style="left:600px;top:300px"></div>
+<div class="obstaculo" style="left:300px;top:250px"></div>
+
 </div>
 
-<!-- LEDS -->
+<!-- PANEL -->
+
+<div id="panel">
 
 <div class="box">
-
-<h3>LEDs Motores</h3>
-
-Motor A:
-<span id="A1" class="led"></span>
-<span id="A2" class="led"></span>
-
-&nbsp;&nbsp;
-
-Motor B:
-<span id="B1" class="led"></span>
-<span id="B2" class="led"></span>
-
-</div>
-
-<!-- ENTRADAS -->
-
-<div class="box">
-
-<h3>Entradas</h3>
-
-A: <input id="eA">
-B: <input id="eB">
-
-<button onclick="simular()">Simular</button>
-
-</div>
-
-<!-- CARACTERES -->
-
-<div class="box">
-
-<h3>Comandos</h3>
-
-F <input id="cA" value="F">
-B <input id="cB" value="B">
-R <input id="cR" value="R">
-L <input id="cL" value="L">
-S <input id="cS" value="S">
-
-</div>
-
-<!-- SERIAL -->
-
-<div class="box">
-
-<h3>Serial</h3>
-
-<button onclick="conectar()">🔌 Conectar</button>
-<span id="estado">No conectado</span>
-
-</div>
-
-<!-- CONTROL -->
-
-<div class="box">
-
 <h3>Control</h3>
-
-<button onclick="cmd('A')">⬆ Adelante</button>
-<button onclick="cmd('B')">⬇ Atrás</button>
-<button onclick="cmd('R')">➡ Derecha</button>
-<button onclick="cmd('L')">⬅ Izquierda</button>
-<button onclick="cmd('S')">⏹ STOP</button>
-
+<button onclick="adelante()">⬆</button><br><br>
+<button onclick="izq()">⬅</button>
+<button onclick="stop()">⏹</button>
+<button onclick="der()">➡</button><br><br>
+<button onclick="atras()">⬇</button>
 </div>
 
-<p id="msg"></p>
+<div class="box">
+<h3>Ultrasónico</h3>
+<p>Distancia:</p>
+<h2 id="dist">0 cm</h2>
+</div>
+
+<div class="box">
+<h3>Puntaje</h3>
+<h2 id="score">0</h2>
+</div>
+
+<div class="box">
+<h3>Estado</h3>
+<p id="estado">Listo</p>
+</div>
+
+</div>
 
 <script>
 
-/* ===== SERIAL ===== */
+/* POSICION */
 
-let port;
-let writer;
-let conectado=false;
+let x=100;
+let y=200;
+let vel=8;
 
-async function conectar(){
+let score=0;
 
-    try{
+const robot=document.getElementById("robot");
+const rayo=document.getElementById("rayo");
+const dist=document.getElementById("dist");
+const estado=document.getElementById("estado");
 
-        port = await navigator.serial.requestPort();
-        await port.open({ baudRate:9600 });
+/* MOVER */
 
-        writer = port.writable.getWriter();
+function mover(){
 
-        conectado=true;
-        estado.innerText="Conectado";
+    robot.style.left=x+"px";
+    robot.style.top=y+"px";
 
-    }catch(e){
-
-        alert("Error conexión");
-
-    }
+    medir();
+    colision();
 }
 
-async function enviarSerial(txt){
+/* COMANDOS */
 
-    if(!conectado) return;
-
-    const data = new TextEncoder().encode(txt);
-    await writer.write(data);
+function adelante(){
+    y-=vel;
+    mover();
 }
 
-/* ===== LED ===== */
-
-function led(id,val){
-    document.getElementById(id)
-    .classList.toggle("on",val=="1");
+function atras(){
+    y+=vel;
+    mover();
 }
 
-/* ===== ROBOT ===== */
-
-function mover(tipo){
-
-    let r=document.getElementById("robot");
-    let w1=document.getElementById("leftWheel");
-    let w2=document.getElementById("rightWheel");
-
-    r.className="";
-    w1.className="wheel";
-    w2.className="wheel";
-
-    if(tipo!="stop"){
-        w1.classList.add("spin");
-        w2.classList.add("spin");
-    }
-
-    r.classList.add(tipo);
+function izq(){
+    x-=vel;
+    mover();
 }
 
-/* ===== APLICAR ===== */
-
-function aplicar(a,b){
-
-    led("A1",a[0]);
-    led("A2",a[1]);
-
-    led("B1",b[0]);
-    led("B2",b[1]);
-
-    let t="";
-
-    if(a=="10"&&b=="10"){
-        t="ADELANTE";
-        mover("forward");
-    }
-
-    else if(a=="01"&&b=="01"){
-        t="ATRÁS";
-        mover("back");
-    }
-
-    else if(a=="10"&&b=="00"){
-        t="DERECHA";
-        mover("right");
-    }
-
-    else if(a=="00"&&b=="10"){
-        t="IZQUIERDA";
-        mover("left");
-    }
-
-    else{
-        t="STOP";
-        mover("stop");
-    }
-
-    msg.innerText=t;
+function der(){
+    x+=vel;
+    mover();
 }
 
-/* ===== SIMULAR ===== */
-
-function simular(){
-
-    let a=eA.value;
-    let b=eB.value;
-
-    if(!["00","01","10"].includes(a)
-    || !["00","01","10"].includes(b)){
-        alert("Use: 00, 01 o 10");
-        return;
-    }
-
-    aplicar(a,b);
+function stop(){
+    estado.innerText="STOP";
 }
 
-/* ===== COMANDOS ===== */
+/* SENSOR */
 
-async function cmd(c){
+function medir(){
 
-    let a="",b="",letra="";
+    let min=300;
 
-    if(c=="A"){ a="10"; b="10"; letra=cA.value; }
-    if(c=="B"){ a="01"; b="01"; letra=cB.value; }
-    if(c=="R"){ a="10"; b="00"; letra=cR.value; }
-    if(c=="L"){ a="00"; b="10"; letra=cL.value; }
-    if(c=="S"){ a="00"; b="00"; letra=cS.value; }
+    let obs=document.querySelectorAll(".obstaculo");
 
-    eA.value=a;
-    eB.value=b;
+    obs.forEach(o=>{
 
-    aplicar(a,b);
+        let ox=o.offsetLeft;
+        let oy=o.offsetTop;
 
-    await enviarSerial(letra);
+        let dx=(ox+25)-(x+30);
+        let dy=(oy+25)-(y);
 
-    msg.innerText+=" | "+(conectado?"Enviado":"Sin serial");
+        if(dy<0 && Math.abs(dx)<40){
+
+            let d=Math.abs(dy);
+
+            if(d<min) min=d;
+        }
+    });
+
+    dist.innerText=min+" cm";
+
+    rayo.style.height=min+"px";
 }
+
+/* COLISION */
+
+function colision(){
+
+    let obs=document.querySelectorAll(".obstaculo");
+
+    obs.forEach(o=>{
+
+        let ox=o.offsetLeft;
+        let oy=o.offsetTop;
+
+        if(
+           x<ox+50 &&
+           x+60>ox &&
+           y<oy+50 &&
+           y+80>oy
+        ){
+
+            score-=5;
+            score=Math.max(0,score);
+
+            document.getElementById("score").innerText=score;
+
+            estado.innerText="💥 CHOQUE";
+        }
+        else{
+            score++;
+            document.getElementById("score").innerText=score;
+        }
+    });
+}
+
+/* TECLADO */
+
+document.addEventListener("keydown",e=>{
+
+    if(e.key=="ArrowUp") adelante();
+    if(e.key=="ArrowDown") atras();
+    if(e.key=="ArrowLeft") izq();
+    if(e.key=="ArrowRight") der();
+    if(e.key==" ") stop();
+
+});
 
 </script>
 
