@@ -17,7 +17,7 @@ body{
 #robot{
     width:650px;
     height:280px;
-    background:white;
+    background:yellow;
     margin:auto;
     border:2px solid black;
     position:relative;
@@ -32,11 +32,43 @@ body{
 #motorA{ left:120px; }
 #motorB{ right:120px; }
 
+/* SENSOR */
+
+#sensor{
+    position:absolute;
+    left:50%;
+    top:20px;
+    transform:translateX(-50%);
+    width:180px;
+}
+
 .flecha{
-    font-size:40px;
+    font-size:80px;
     position:absolute;
     top:-50px;
     width:100%;
+}
+
+/* ANIMACIONES */
+
+@keyframes parpadeo {
+    0% { opacity:1; }
+    50% { opacity:0.2; }
+    100% { opacity:1; }
+}
+
+@keyframes moverLados {
+    0% { transform:translateX(0); }
+    50% { transform:translateX(12px); }
+    100% { transform:translateX(0); }
+}
+
+.anim-vertical{
+    animation: parpadeo 0.6s infinite;
+}
+
+.anim-horizontal{
+    animation: moverLados 0.6s infinite;
 }
 
 /* LEDS */
@@ -58,7 +90,7 @@ body{
 /* CONTROLES */
 
 input{
-    width:50px;
+    width:60px;
     text-align:center;
     font-size:16px;
 }
@@ -77,6 +109,12 @@ button{
     padding:10px;
 }
 
+.alerta{
+    color:red;
+    font-weight:bold;
+    font-size:18px;
+}
+
 </style>
 </head>
 
@@ -93,10 +131,31 @@ button{
         <img src="motor.png" width="80">
     </div>
 
+    <!-- SENSOR -->
+    <img src="sensor.png" id="sensor">
+
     <div id="motorB" class="motor">
         <div class="flecha" id="fb"></div>
         <img src="motor.png" width="80">
     </div>
+
+</div>
+
+<!-- SENSOR DATOS -->
+
+<div class="box">
+
+<h3>Sensor de Distancia</h3>
+
+Distancia:
+<span id="distancia">--</span> cm
+
+&nbsp;&nbsp;
+
+Umbral:
+<input type="number" id="umbral" min="0" max="50" value="20">
+
+<p id="alerta"></p>
 
 </div>
 
@@ -183,6 +242,24 @@ let port;
 let writer;
 let conectado = false;
 
+/* ================= SENSOR ================= */
+
+let distanciaActual = 30;
+let detenidoAuto = false;
+
+/* ================= SONIDOS ================= */
+
+const audioAdelante = new Audio("adelante.mp3");
+const audioAtras = new Audio("atras.mp3");
+const audioDerecha = new Audio("derecha.mp3");
+const audioIzquierda = new Audio("izquierda.mp3");
+const audioStop = new Audio("stop.mp3");
+
+function reproducir(a){
+    a.currentTime = 0;
+    a.play();
+}
+
 /* ================= CONECTAR ================= */
 
 async function conectar(){
@@ -190,19 +267,93 @@ async function conectar(){
     try{
 
         port = await navigator.serial.requestPort();
-
         await port.open({ baudRate:9600 });
 
         writer = port.writable.getWriter();
 
         conectado = true;
 
-        document.getElementById("estado").innerText = "Conectado";
+        estado.innerText = "Conectado";
+
+        leerSerial();
 
     }catch(e){
 
         alert("No se pudo conectar");
 
+    }
+}
+
+/* ================= LEER SERIAL ================= */
+
+async function leerSerial(){
+
+    const reader = port.readable.getReader();
+    let buffer = "";
+
+    while(true){
+
+        const { value, done } = await reader.read();
+
+        if(done) break;
+
+        buffer += new TextDecoder().decode(value);
+
+        if(buffer.includes("\n")){
+
+            let linea = buffer.trim();
+            buffer="";
+
+            procesarDato(linea);
+        }
+    }
+}
+
+/* ================= PROCESAR SENSOR ================= */
+
+function procesarDato(txt){
+
+    let d = parseInt(txt);
+
+    if(isNaN(d)) return;
+
+    distanciaActual = d;
+
+    distancia.innerText = d;
+
+    verificarUmbral();
+}
+
+/* ================= VERIFICAR ================= */
+
+async function verificarUmbral(){
+
+    let um = parseInt(umbral.value);
+
+    if(isNaN(um)) return;
+
+    if(um<0) um=0;
+    if(um>50) um=50;
+
+    umbral.value = um;
+
+    if(distanciaActual < um){
+
+        if(!detenidoAuto){
+
+            detenidoAuto = true;
+
+            alerta.innerHTML = "🚨 OBSTÁCULO DETECTADO - PARAR";
+            alerta.className="alerta";
+
+            await cmd("S");
+        }
+
+    }else{
+
+        detenidoAuto = false;
+
+        alerta.innerHTML = "";
     }
 }
 
@@ -212,7 +363,7 @@ async function enviarSerial(txt){
 
     if(!conectado) return;
 
-    const data = new TextEncoder().encode(txt);
+    const data = new TextEncoder().encode(txt+"\n");
 
     await writer.write(data);
 }
@@ -241,28 +392,58 @@ function flecha(id,val){
 
 function aplicar(a,b){
 
-    // LEDs
+    fa.className = "flecha";
+    fb.className = "flecha";
+
     led("A1",a[0]);
     led("A2",a[1]);
 
     led("B1",b[0]);
     led("B2",b[1]);
 
-    // Flechas
     flecha("fa",a);
     flecha("fb",b);
 
-    // Texto
     let t="";
 
-    if(a=="10" && b=="10") t="⬆ ADELANTE";
-    else if(a=="01" && b=="01") t="⬇ ATRÁS";
-    else if(a=="10" && b=="00") t="➡ DERECHA";
-    else if(a=="00" && b=="10") t="⬅ IZQUIERDA";
-    else if(a=="00" && b=="00") t="⏹ STOP";
-    else t="↕ MIXTO";
+    if(a=="10" && b=="10"){
+        t="⬆ ADELANTE";
+        fa.classList.add("anim-vertical");
+        fb.classList.add("anim-vertical");
+        reproducir(audioAdelante);
+    }
 
-    document.getElementById("msg").innerText = t;
+    else if(a=="01" && b=="01"){
+        t="⬇ ATRÁS";
+        fa.classList.add("anim-vertical");
+        fb.classList.add("anim-vertical");
+        reproducir(audioAtras);
+    }
+
+    else if(a=="10" && b=="00"){
+        t="➡ DERECHA";
+        fa.classList.add("anim-horizontal");
+        fb.classList.add("anim-horizontal");
+        reproducir(audioDerecha);
+    }
+
+    else if(a=="00" && b=="10"){
+        t="⬅ IZQUIERDA";
+        fa.classList.add("anim-horizontal");
+        fb.classList.add("anim-horizontal");
+        reproducir(audioIzquierda);
+    }
+
+    else if(a=="00" && b=="00"){
+        t="⏹ STOP";
+        reproducir(audioStop);
+    }
+
+    else{
+        t="↕ MIXTO";
+    }
+
+    msg.innerText = t;
 }
 
 /* ================= SIMULAR ================= */
@@ -288,38 +469,17 @@ async function cmd(c){
 
     let a="", b="", letra="";
 
-    if(c=="A"){
-        a="10"; b="10";
-        letra=cA.value;
-    }
+    if(c=="A"){ a="10"; b="10"; letra=cA.value; }
+    if(c=="B"){ a="01"; b="01"; letra=cB.value; }
+    if(c=="R"){ a="10"; b="00"; letra=cR.value; }
+    if(c=="L"){ a="00"; b="10"; letra=cL.value; }
+    if(c=="S"){ a="00"; b="00"; letra=cS.value; }
 
-    if(c=="B"){
-        a="01"; b="01";
-        letra=cB.value;
-    }
-
-    if(c=="R"){
-        a="10"; b="00";
-        letra=cR.value;
-    }
-
-    if(c=="L"){
-        a="00"; b="10";
-        letra=cL.value;
-    }
-
-    if(c=="S"){
-        a="00"; b="00";
-        letra=cS.value;
-    }
-
-    // Mostrar
     eA.value = a;
     eB.value = b;
 
     aplicar(a,b);
 
-    // Enviar
     await enviarSerial(letra);
 
     msg.innerText += conectado
