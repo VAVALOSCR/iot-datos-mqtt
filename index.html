@@ -131,7 +131,6 @@ button{
         <img src="motor.png" width="80">
     </div>
 
-    <!-- SENSOR -->
     <img src="sensor.png" id="sensor">
 
     <div id="motorB" class="motor">
@@ -140,8 +139,6 @@ button{
     </div>
 
 </div>
-
-<!-- SENSOR DATOS -->
 
 <div class="box">
 
@@ -159,8 +156,6 @@ Umbral:
 
 </div>
 
-<!-- LEDS -->
-
 <div class="box">
 
 <h3>LEDs</h3>
@@ -177,8 +172,6 @@ Motor B:
 
 </div>
 
-<!-- ENTRADAS -->
-
 <div class="box">
 
 <h3>Entradas</h3>
@@ -193,8 +186,6 @@ Motor B:
 
 </div>
 
-<!-- ASIGNAR -->
-
 <div class="box">
 
 <h3>Asignar Caracteres</h3>
@@ -207,8 +198,6 @@ STOP <input id="cS" value="S">
 
 </div>
 
-<!-- SERIAL -->
-
 <div class="box">
 
 <h3>Puerto Serial</h3>
@@ -217,8 +206,6 @@ STOP <input id="cS" value="S">
 <span id="estado">No conectado</span>
 
 </div>
-
-<!-- BOTONES -->
 
 <div class="box">
 
@@ -487,9 +474,12 @@ async function cmd(c){
         : " | (No conectado)";
 }
 
-/* ================= TECLADO ================= */
+/* ================= TECLADO CORREGIDO ================= */
 
 document.addEventListener("keydown", function(e){
+
+    // No controlar si escribe en input
+    if(e.target.tagName === "INPUT") return;
 
     e.preventDefault();
 
